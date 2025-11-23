@@ -5,21 +5,16 @@ import type { Stock } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 
-const CustomizedContent = ({
-  root,
-  depth,
-  x,
-  y,
-  width,
-  height,
-  index,
-  payload,
-  colors,
-  name,
-  value,
-  change,
-}: any) => {
+const CustomizedContent = (props: any) => {
+  const { root, depth, x, y, width, height, index, colors, name, value } = props;
+  
+  // The actual data object from our `data` array is in `props.payload`
+  const stockData = props.payload;
+  if (!stockData) return null;
+
+  const change = stockData.change || 0;
   const isPositive = change >= 0;
+
   return (
     <g>
       <rect
@@ -48,7 +43,7 @@ const CustomizedContent = ({
         >
           <div>
             <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{name}</div>
-            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{payload.ticker}</div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{stockData.ticker}</div>
           </div>
           <div>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
@@ -65,28 +60,27 @@ const CustomizedContent = ({
 };
 
 export default function MarketMapClient() {
-  const [data, setData] = useState(
-    mockStocks.map((s) => ({ ...s, change: 0 }))
-  );
+  const [data, setData] = useState<(Stock & { change: number })[]>([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setData((prevData) =>
-        prevData.map((stock) => {
-          const randomChange = (Math.random() - 0.5) * 5; // Change between -2.5% and +2.5%
-          const newValue = Math.max(10, stock.value * (1 + randomChange / 100));
-          return {
-            ...stock,
-            value: newValue,
-            change: randomChange,
-          };
-        })
-      );
-    }, 3000);
+     const loadData = () => {
+      const hasRegistered = localStorage.getItem('firstRegistration') === 'true';
+      let stocksToDisplay;
+      if (hasRegistered) {
+        const storedStocks = JSON.parse(localStorage.getItem('stocks') || '[]');
+        stocksToDisplay = storedStocks.length > 0 ? storedStocks : mockStocks;
+      } else {
+        stocksToDisplay = mockStocks;
+      }
+      setData(stocksToDisplay.map((s: Stock) => ({ ...s, change: s.sentiment })));
+    };
+    
+    loadData(); // Initial load
+    const dataInterval = setInterval(loadData, 3000); // Refresh data every 3 seconds
 
-    return () => clearInterval(interval);
+    return () => clearInterval(dataInterval);
   }, []);
-
+  
   return (
     <ResponsiveContainer width="100%" height="100%">
       <Treemap
@@ -95,6 +89,7 @@ export default function MarketMapClient() {
         nameKey="nickname"
         aspectRatio={16 / 9}
         content={<CustomizedContent />}
+        isAnimationActive={false} // Better for frequent updates
       >
         <Tooltip
           contentStyle={{
