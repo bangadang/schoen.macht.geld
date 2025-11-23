@@ -47,42 +47,24 @@ export default function RegistrationClient() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const stopStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+  const stopStream = useCallback((currentStream: MediaStream | null) => {
+    if (currentStream) {
+      currentStream.getTracks().forEach((track) => track.stop());
     }
-  }, [stream]);
-
-  const getCameraStream = useCallback(
-    async (deviceId: string) => {
-      stopStream();
-      setError(null);
-      try {
-        const newStream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: deviceId } },
-        });
-        setStream(newStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = newStream;
-        }
-      } catch (err) {
-        console.error('Error accessing camera:', err);
-        setError(
-          'Could not access camera. Please check permissions and try again.'
-        );
-      }
-    },
-    [stopStream]
-  );
+  }, []);
 
   useEffect(() => {
     const getDevices = async () => {
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true }); // Request permission
+        // Request permission and get a stream to enumerate devices
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         const availableDevices = (
           await navigator.mediaDevices.enumerateDevices()
         ).filter((device) => device.kind === 'videoinput');
+        
+        // Stop the temporary stream once we have the device list
+        stopStream(tempStream);
+
         setDevices(availableDevices);
         if (availableDevices.length > 0) {
           const preferredDeviceId = localStorage.getItem('preferredCameraId');
@@ -90,8 +72,11 @@ export default function RegistrationClient() {
             availableDevices.find((d) => d.deviceId === preferredDeviceId) ||
             availableDevices[0];
           setSelectedDeviceId(deviceToUse.deviceId);
+        } else {
+            setError('No camera devices found.');
         }
       } catch (err) {
+        console.error("Error enumerating devices:", err)
         setError(
           'Camera permission denied. Please allow camera access in your browser settings.'
         );
@@ -100,17 +85,51 @@ export default function RegistrationClient() {
 
     getDevices();
 
+    // Cleanup function for when the component unmounts
     return () => {
-      stopStream();
+        // stream is a state variable, we need to get the latest value with a function
+        setStream(current => {
+            stopStream(current);
+            return null;
+        });
     };
   }, [stopStream]);
 
   useEffect(() => {
-    if (selectedDeviceId) {
+    if (selectedDeviceId && !photoDataUrl) {
       localStorage.setItem('preferredCameraId', selectedDeviceId);
-      getCameraStream(selectedDeviceId);
+      let newStream: MediaStream | null = null;
+
+      const getCameraStream = async () => {
+        try {
+            setError(null);
+            newStream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: selectedDeviceId } },
+            });
+            setStream(newStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = newStream;
+            }
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            setError(
+                'Could not access camera. Please check permissions and try again.'
+            );
+        }
+      }
+      
+      getCameraStream();
+
+      // Cleanup this effect
+      return () => {
+          stopStream(newStream);
+          setStream(current => {
+            if (current === newStream) return null;
+            return current;
+          });
+      }
     }
-  }, [selectedDeviceId, getCameraStream]);
+  }, [selectedDeviceId, photoDataUrl, stopStream]);
 
   const handleTakePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -122,15 +141,16 @@ export default function RegistrationClient() {
       context?.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg');
       setPhotoDataUrl(dataUrl);
-      stopStream();
+      setStream(current => {
+          stopStream(current);
+          return null;
+      });
     }
   };
 
   const handleRetakePhoto = () => {
     setPhotoDataUrl(null);
-    if (selectedDeviceId) {
-      getCameraStream(selectedDeviceId);
-    }
+    // The useEffect for selectedDeviceId will automatically restart the stream
   };
 
   const handleGenerateDescription = async () => {
@@ -189,9 +209,6 @@ export default function RegistrationClient() {
       setPhotoDataUrl(null);
       setDescription('');
       setIsRegistering(false);
-      if (selectedDeviceId) {
-        getCameraStream(selectedDeviceId);
-      }
     }, 1500);
   };
 
@@ -240,6 +257,7 @@ export default function RegistrationClient() {
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-cover"
                 />
               )}
@@ -251,7 +269,7 @@ export default function RegistrationClient() {
             <Select
               value={selectedDeviceId}
               onValueChange={setSelectedDeviceId}
-              disabled={devices.length === 0}
+              disabled={devices.length === 0 || !!photoDataUrl}
             >
               <SelectTrigger id="camera">
                 <SelectValue placeholder="Select camera..." />
