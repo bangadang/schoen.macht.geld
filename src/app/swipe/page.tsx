@@ -1,5 +1,4 @@
 import SwipeClient from './swipe-client';
-import { mockStocks } from '@/lib/mock-data';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
@@ -13,7 +12,9 @@ export default function SwipePage() {
         <ArrowLeft className="w-4 h-4" />
         Back to Home
       </Link>
-      <SwipeClient initialStocks={mockStocks} />
+      <SwipeClient />
     </div>
   );
 }
+
+    

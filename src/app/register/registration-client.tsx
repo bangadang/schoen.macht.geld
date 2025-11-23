@@ -196,29 +196,38 @@ export default function RegistrationClient() {
     
     setIsRegistering(true);
     
-    // In a real app, this would send the data to the backend/database.
-    // For now, we'll store it in localStorage.
+    const initialValue = 100;
     const newStock = {
       id: Date.now().toString(),
       ticker: nickname.substring(0, 4).toUpperCase().padEnd(4, 'X'),
       nickname,
       photoUrl: photoDataUrl,
       description,
-      value: 100, // Initial value
+      value: initialValue,
       history: [],
       sentiment: 0,
     };
     
-    const existingStocks = JSON.parse(localStorage.getItem('stocks') || '[]');
-    const firstRegistration = localStorage.getItem('firstRegistration') !== 'true';
-
-    // On first registration, clear mock data.
-    const newStockList = firstRegistration ? [newStock] : [...existingStocks, newStock];
-    
-    localStorage.setItem('stocks', JSON.stringify(newStockList));
-    if (firstRegistration) {
+    // This is the first ever registration, clear all mock data and session history
+    const isFirstRegistration = localStorage.getItem('firstRegistration') !== 'true';
+    if (isFirstRegistration) {
+      // Clear all stock-related data
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('stock_') || key.startsWith('initial_stock_') || key === 'stocks' || key === 'firstRegistration') {
+          localStorage.removeItem(key);
+        }
+      });
       localStorage.setItem('firstRegistration', 'true');
+      localStorage.setItem('stocks', JSON.stringify([newStock]));
+      localStorage.setItem(`initial_stock_${newStock.id}`, JSON.stringify(initialValue));
+
+    } else {
+      const existingStocks = JSON.parse(localStorage.getItem('stocks') || '[]');
+      const newStockList = [...existingStocks, newStock];
+      localStorage.setItem('stocks', JSON.stringify(newStockList));
+      localStorage.setItem(`initial_stock_${newStock.id}`, JSON.stringify(initialValue));
     }
+
 
     setTimeout(() => {
       toast({
@@ -364,3 +373,5 @@ export default function RegistrationClient() {
     </Card>
   );
 }
+
+    

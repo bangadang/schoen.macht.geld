@@ -1,7 +1,6 @@
 
 'use client';
 
-import { mockStocks } from '@/lib/mock-data';
 import type { Stock } from '@/lib/types';
 import { useEffect, useState, useRef } from 'react';
 import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
@@ -26,7 +25,7 @@ const CustomizedContent = (props: any) => {
         width={width}
         height={height}
         style={{
-          fill: isPositive ? '#10B981' : '#EF4444',
+          fill: isPositive ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(0 72.2% 50.6%)',
           stroke: '#1f2937',
           strokeWidth: 2,
           opacity: 0.8,
@@ -64,24 +63,26 @@ export default function MarketMapClient() {
 
   useEffect(() => {
      const loadData = () => {
-        const hasRegistered = localStorage.getItem('firstRegistration') === 'true';
-        let stocksToDisplay: Stock[];
+        const storedStocks: Stock[] = JSON.parse(localStorage.getItem('stocks') || '[]');
 
-        if (hasRegistered) {
-            const storedStocks = JSON.parse(localStorage.getItem('stocks') || '[]');
-            stocksToDisplay = storedStocks.length > 0 ? storedStocks : mockStocks;
-        } else {
-            stocksToDisplay = mockStocks;
+        if (storedStocks.length === 0) {
+            setData([]);
+            return;
         }
         
-        // Initialize initial values if they don't exist yet for new stocks
-        stocksToDisplay.forEach(stock => {
+        storedStocks.forEach(stock => {
             if (!initialValuesRef.current.has(stock.id)) {
-                initialValuesRef.current.set(stock.id, stock.value);
+                 const initialValue = JSON.parse(localStorage.getItem(`initial_stock_${stock.id}`) || 'null');
+                if (initialValue) {
+                    initialValuesRef.current.set(stock.id, initialValue);
+                } else {
+                    initialValuesRef.current.set(stock.id, stock.value);
+                    localStorage.setItem(`initial_stock_${stock.id}`, JSON.stringify(stock.value));
+                }
             }
         });
 
-        const updatedData = stocksToDisplay.map((stock: Stock) => {
+        const updatedData = storedStocks.map((stock: Stock) => {
             const initialValue = initialValuesRef.current.get(stock.id) ?? stock.value;
             const change = stock.value - initialValue;
             const percentChange = initialValue === 0 ? 0 : (change / initialValue) * 100;
@@ -90,9 +91,8 @@ export default function MarketMapClient() {
                 ...stock, 
                 change,
                 percentChange,
-                // The Treemap `dataKey` should be positive to have an area
-                value: Math.abs(stock.value) || 1, 
-                currentValue: stock.value, // Keep the actual value for the tooltip
+                // Treemap size should be based on market cap (value), must be positive
+                size: Math.abs(stock.value) || 1, 
             };
         });
         setData(updatedData);
@@ -108,11 +108,11 @@ export default function MarketMapClient() {
     <ResponsiveContainer width="100%" height="100%">
       <Treemap
         data={data}
-        dataKey="value" // Use `value` for block size
+        dataKey="size"
         nameKey="nickname"
         aspectRatio={16 / 9}
         content={<CustomizedContent />}
-        isAnimationActive={false} // Better for frequent updates
+        isAnimationActive={false}
       >
         <Tooltip
           contentStyle={{
@@ -122,14 +122,17 @@ export default function MarketMapClient() {
           }}
           labelStyle={{ color: 'white' }}
           formatter={(value: number, name: string, props) => {
-              const payload = props.payload as StockWithChange & { currentValue: number };
-              const currentValue = payload.currentValue;
+              const payload = props.payload as StockWithChange;
+              const currentValue = payload.value;
               const change = payload.change;
               const percentChange = payload.percentChange;
               const isPositive = change >= 0;
+
               return [
-                  `$${(currentValue as number).toFixed(2)}`,
-                  `${isPositive ? '+' : ''}${change.toFixed(2)} (${percentChange.toFixed(2)}%)`
+                  `$${currentValue.toFixed(2)}`,
+                   <span key="change" className={isPositive ? 'text-green-400' : 'text-red-500'}>
+                    {isPositive ? '+' : ''}{change.toFixed(2)} ({percentChange.toFixed(2)}%)
+                   </span>
               ]
           }}
           labelFormatter={(label) => <span className="font-bold text-lg">{label}</span>}
@@ -138,3 +141,5 @@ export default function MarketMapClient() {
     </ResponsiveContainer>
   );
 }
+
+    
