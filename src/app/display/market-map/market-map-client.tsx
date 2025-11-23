@@ -8,13 +8,13 @@ import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 type StockWithChange = Stock & { change: number; percentChange: number };
 
 const CustomizedContent = (props: any) => {
-  const { x, y, width, height, name } = props;
-  
-  // The actual data object from our `data` array is in `props.payload`
-  const stockData = props.payload as StockWithChange | undefined;
-  if (!stockData) return null;
+  const { x, y, width, height, name, value, ticker, percentChange } = props;
 
-  const { value, ticker, percentChange } = stockData;
+  // Don't render tiny boxes
+  if (width < 50 || height < 40) {
+    return null;
+  }
+
   const isPositive = percentChange >= 0;
 
   return (
@@ -38,28 +38,24 @@ const CustomizedContent = (props: any) => {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             color: 'white',
             textAlign: 'left',
+            padding: '4px',
           }}
         >
-          <div>
-            <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{name}</div>
-            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{ticker}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-              ${value.toFixed(2)}
-            </div>
-            <div style={{ color: isPositive ? '#A7F3D0' : '#FECACA' }}>
-              {isPositive ? '▲' : '▼'} {Math.abs(percentChange).toFixed(2)}%
-            </div>
+          <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{ticker}</div>
+          <div style={{ fontSize: '0.8rem', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+          <div style={{ marginTop: 'auto', fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {isPositive ? '+' : ''}
+              {percentChange.toFixed(2)}%
           </div>
         </div>
       </foreignObject>
     </g>
   );
 };
+
 
 export default function MarketMapClient() {
   const [data, setData] = useState<StockWithChange[]>([]);
@@ -85,7 +81,9 @@ export default function MarketMapClient() {
                 const change = stock.value - prevValue;
                 const percentChange = prevValue === 0 ? 0 : (change / prevValue) * 100;
                 
-                previousValues.set(stock.id, stock.value);
+                if (change !== 0) {
+                    previousValues.set(stock.id, stock.value);
+                }
 
                 return { 
                     ...stock, 
