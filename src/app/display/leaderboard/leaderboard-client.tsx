@@ -1,7 +1,6 @@
 
 'use client';
 
-import { mockStocks } from '@/lib/mock-data';
 import type { Stock } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -16,25 +15,27 @@ export default function LeaderboardClient() {
 
   useEffect(() => {
     const loadData = () => {
-      const hasRegistered = localStorage.getItem('firstRegistration') === 'true';
-      let stocksToDisplay: Stock[];
+      const storedStocks: Stock[] = JSON.parse(localStorage.getItem('stocks') || '[]');
 
-      if (hasRegistered) {
-        const storedStocks = JSON.parse(localStorage.getItem('stocks') || '[]');
-        stocksToDisplay = storedStocks.length > 0 ? storedStocks : mockStocks;
-      } else {
-        stocksToDisplay = mockStocks;
+      if (storedStocks.length === 0) {
+        setStocks([]);
+        return;
       }
-
-      // Initialize initial values if they don't exist yet for new stocks
-      stocksToDisplay.forEach(stock => {
+      
+      storedStocks.forEach(stock => {
         if (!initialValuesRef.current.has(stock.id)) {
-            initialValuesRef.current.set(stock.id, stock.value);
+            const initialValue = JSON.parse(localStorage.getItem(`initial_stock_${stock.id}`) || 'null');
+            if (initialValue) {
+                initialValuesRef.current.set(stock.id, initialValue);
+            } else {
+                initialValuesRef.current.set(stock.id, stock.value);
+                localStorage.setItem(`initial_stock_${stock.id}`, JSON.stringify(stock.value));
+            }
         }
       });
 
 
-      const updatedStocks = stocksToDisplay.map(stock => {
+      const updatedStocks = storedStocks.map(stock => {
         const initialValue = initialValuesRef.current.get(stock.id) ?? stock.value;
         const change = stock.value - initialValue;
         const percentChange = initialValue === 0 ? 0 : (change / initialValue) * 100;
@@ -109,3 +110,5 @@ export default function LeaderboardClient() {
     </div>
   );
 }
+
+    
