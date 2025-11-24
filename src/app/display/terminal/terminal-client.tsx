@@ -141,18 +141,18 @@ export default function TerminalClient() {
 
         const newRanks = new Map<string, number>();
         sortedStocks.forEach((stock, index) => {
-            newRanks.set(stock.id, index + 1); // Use 1-based ranking
+            newRanks.set(stock.id, index + 1);
         });
 
         const prevRanks = prevRanksRef.current;
         const changes = new Map<string, 'up' | 'down' | 'same'>();
         
-        // Only proceed if prevRanks has been initialized.
+        // Only calculate changes if we have a previous state to compare against.
         if (prevRanks.size > 0) {
             newRanks.forEach((newRank, stockId) => {
                 const prevRank = prevRanks.get(stockId);
                 if (prevRank === undefined) {
-                    changes.set(stockId, 'same'); // New stock, treat as 'same' for now
+                    changes.set(stockId, 'same'); // New stock, treat as 'same'
                 } else if (newRank < prevRank) {
                     changes.set(stockId, 'up');
                 } else if (newRank > prevRank) {
@@ -162,13 +162,13 @@ export default function TerminalClient() {
                 }
             });
         } else {
-             // On first run, all are 'same'.
-             newRanks.forEach(stockId => changes.set(stockId, 'same'));
+             // On the very first run, all are 'same'.
+             newRanks.forEach((_rank, stockId) => changes.set(stockId, 'same'));
         }
 
         setRankChanges(changes);
 
-        // CRITICAL: Update the ref AFTER the comparison for the next render.
+        // CRITICAL: Update the ref for the next render AFTER the comparison logic.
         prevRanksRef.current = newRanks;
 
     }, [sortedStocks]);
