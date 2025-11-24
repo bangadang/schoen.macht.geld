@@ -21,7 +21,7 @@ const StockInputSchema = z.object({
   percentChange: z.number().describe('The percentage change in stock value over the session.'),
 });
 
-export const GenerateFunnyNewsHeadlinesBatchInputSchema = z.object({
+const GenerateFunnyNewsHeadlinesBatchInputSchema = z.object({
     stocks: z.array(StockInputSchema).describe('An array of the top 5 trending stocks.')
 });
 export type GenerateFunnyNewsHeadlinesBatchInput = z.infer<
