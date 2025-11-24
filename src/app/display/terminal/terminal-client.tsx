@@ -78,11 +78,12 @@ const NewsTicker = ({ stocks }: { stocks: Stock[] }) => {
 
   // Set up an interval to cycle through the available headlines.
   useEffect(() => {
-    const headlineCycleInterval = setInterval(() => {
-        setHeadlineIndex(prevIndex => (prevIndex + 1) % headlines.length);
-    }, 30000); // Change headline every 30 seconds
-
-    return () => clearInterval(headlineCycleInterval);
+    if (headlines.length > 1) {
+        const headlineCycleInterval = setInterval(() => {
+            setHeadlineIndex(prevIndex => (prevIndex + 1) % headlines.length);
+        }, 30000); // Change headline every 30 seconds
+        return () => clearInterval(headlineCycleInterval);
+    }
   }, [headlines]);
 
   // Use a key on the animated div to force a re-render (and restart the animation) when the headline changes.
@@ -94,6 +95,7 @@ const NewsTicker = ({ stocks }: { stocks: Stock[] }) => {
          <div
             key={currentHeadline} // This is the key!
             className="flex animate-marquee-fast whitespace-nowrap"
+            style={{ animationDuration: '45s' }}
           >
             <span className="text-xl font-bold px-12">{currentHeadline}</span>
             <span className="text-xl font-bold px-12" aria-hidden="true">{currentHeadline}</span>
@@ -125,33 +127,41 @@ export default function TerminalClient() {
     const prevRanksRef = useRef<Map<string, number>>(new Map());
     const [rankChanges, setRankChanges] = useState<Map<string, 'up' | 'down' | 'same'>>(new Map());
 
-    // Memoize sorted stocks to prevent re-sorting on every render.
+    // Memoize sorted stocks to prevent re-sorting on every render unless the source data changes.
     const sortedStocks = useMemo(() => {
       return stocks ? [...stocks].sort((a, b) => b.currentValue - a.currentValue) : [];
     }, [stocks]);
     
     // Effect to calculate and set rank changes when the sorted list of stocks updates.
     useEffect(() => {
-      const newRanks = new Map<string, number>();
-      sortedStocks.forEach((stock, index) => {
-        newRanks.set(stock.id, index);
-      });
+        if (sortedStocks.length === 0) return;
 
-      const changes = new Map<string, 'up' | 'down' | 'same'>();
-      newRanks.forEach((currentRank, stockId) => {
-        const prevRank = prevRanksRef.current.get(stockId);
-        if (prevRank === undefined || prevRank === currentRank) {
-          changes.set(stockId, 'same');
-        } else if (currentRank < prevRank) {
-          changes.set(stockId, 'up');
+        const newRanks = new Map<string, number>();
+        sortedStocks.forEach((stock, index) => {
+            newRanks.set(stock.id, index);
+        });
+
+        const changes = new Map<string, 'up' | 'down' | 'same'>();
+        // Only calculate changes if there was a previous ranking to compare against.
+        if (prevRanksRef.current.size > 0) {
+            newRanks.forEach((currentRank, stockId) => {
+                const prevRank = prevRanksRef.current.get(stockId);
+                if (prevRank === undefined || prevRank === currentRank) {
+                    changes.set(stockId, 'same');
+                } else if (currentRank < prevRank) {
+                    changes.set(stockId, 'up');
+                } else {
+                    changes.set(stockId, 'down');
+                }
+            });
         } else {
-          changes.set(stockId, 'down');
+            // On the first run, everything is 'same'.
+            newRanks.forEach(stockId => changes.set(stockId, 'same'));
         }
-      });
 
-      setRankChanges(changes);
-      prevRanksRef.current = newRanks;
-
+        setRankChanges(changes);
+        // Update the ref *after* the render cycle.
+        prevRanksRef.current = newRanks;
     }, [sortedStocks]);
 
 
@@ -160,16 +170,16 @@ export default function TerminalClient() {
       <div className="flex justify-between items-center text-yellow-400 border-b-2 border-yellow-400 pb-1">
         <h1 className="text-2xl">SMG TERMINAL</h1>
       </div>
-      <div className="flex-1 overflow-y-auto mt-2">
+      <div className="flex-1 overflow-hidden mt-2">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-700 hover:bg-gray-900">
-              <TableHead className="text-yellow-400 w-12"></TableHead>
-              <TableHead className="text-yellow-400">TICKER</TableHead>
-              <TableHead className="text-yellow-400">NICKNAME</TableHead>
-              <TableHead className="text-yellow-400 text-right">WERT</TableHead>
-              <TableHead className="text-yellow-400 text-right">CHG (5M)</TableHead>
-              <TableHead className="text-yellow-400 text-right">% CHG (5M)</TableHead>
+              <TableHead className="text-yellow-400 w-12 px-2 h-8"></TableHead>
+              <TableHead className="text-yellow-400 px-2 h-8">TICKER</TableHead>
+              <TableHead className="text-yellow-400 px-2 h-8">NICKNAME</TableHead>
+              <TableHead className="text-yellow-400 text-right px-2 h-8">WERT</TableHead>
+              <TableHead className="text-yellow-400 text-right px-2 h-8">CHG (5M)</TableHead>
+              <TableHead className="text-yellow-400 text-right px-2 h-8">% CHG (5M)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,12 +205,12 @@ export default function TerminalClient() {
                     key={stock.id}
                     className="border-gray-800 hover:bg-gray-900/50"
                   >
-                    <TableCell className="w-12">{RankIndicator}</TableCell>
-                    <TableCell className="font-bold">{stock.ticker}</TableCell>
-                    <TableCell>{stock.nickname}</TableCell>
+                    <TableCell className="w-12 px-2 py-1">{RankIndicator}</TableCell>
+                    <TableCell className="font-bold px-2 py-1">{stock.ticker}</TableCell>
+                    <TableCell className="px-2 py-1">{stock.nickname}</TableCell>
                     <TableCell
                       className={cn(
-                        'text-right font-bold',
+                        'text-right font-bold px-2 py-1',
                         stock.change >= 0 ? 'text-green-400' : 'text-red-500'
                       )}
                     >
@@ -208,7 +218,7 @@ export default function TerminalClient() {
                     </TableCell>
                     <TableCell
                       className={cn(
-                        'text-right',
+                        'text-right px-2 py-1',
                         (stock.valueChangeLast5Minutes ?? 0) === 0 ? 'text-gray-500' : changeLast5MinPositive ? 'text-green-400' : 'text-red-500'
                       )}
                     >
@@ -217,7 +227,7 @@ export default function TerminalClient() {
                     </TableCell>
                     <TableCell
                       className={cn(
-                        'text-right',
+                        'text-right px-2 py-1',
                          (stock.percentChangeLast5Minutes ?? 0) === 0 ? 'text-gray-500' : changeLast5MinPositive ? 'text-green-400' : 'text-red-500'
                       )}
                     >
