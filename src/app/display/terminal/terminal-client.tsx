@@ -12,7 +12,7 @@ import {
 import type { Stock } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -130,8 +130,8 @@ export default function TerminalClient() {
       return stocks ? [...stocks].sort((a, b) => b.currentValue - a.currentValue) : [];
     }, [stocks]);
 
-    const [previousRanks, setPreviousRanks] = useState<Map<string, number>>(new Map());
     const [rankChanges, setRankChanges] = useState<Map<string, 'up' | 'down' | 'same'>>(new Map());
+    const previousRanksRef = useRef<Map<string, number>>(new Map());
 
     useEffect(() => {
         if (sortedStocks.length === 0) {
@@ -141,22 +141,33 @@ export default function TerminalClient() {
         const newRanks = new Map(sortedStocks.map((stock, index) => [stock.id, index]));
         const newRankChanges = new Map<string, 'up' | 'down' | 'same'>();
 
-        newRanks.forEach((newRank, stockId) => {
-            const prevRank = previousRanks.get(stockId);
-            if (prevRank === undefined || previousRanks.size === 0) {
-                // If there's no previous rank (new stock or first load), it's 'same'.
+        const prevRanks = previousRanksRef.current;
+
+        // If it's the first run (prevRanks is empty), mark all as 'same'.
+        if (prevRanks.size === 0) {
+             newRanks.forEach((_, stockId) => {
                 newRankChanges.set(stockId, 'same');
-            } else if (newRank < prevRank) {
-                newRankChanges.set(stockId, 'up');
-            } else if (newRank > prevRank) {
-                newRankChanges.set(stockId, 'down');
-            } else {
-                newRankChanges.set(stockId, 'same');
-            }
-        });
+            });
+        } else {
+            newRanks.forEach((newRank, stockId) => {
+                const prevRank = prevRanks.get(stockId);
+                if (prevRank === undefined) {
+                    // New stock added to the list
+                    newRankChanges.set(stockId, 'same');
+                } else if (newRank < prevRank) {
+                    newRankChanges.set(stockId, 'up');
+                } else if (newRank > prevRank) {
+                    newRankChanges.set(stockId, 'down');
+                } else {
+                    newRankChanges.set(stockId, 'same');
+                }
+            });
+        }
         
         setRankChanges(newRankChanges);
-        setPreviousRanks(newRanks);
+        
+        // After comparison, update the ref for the next render.
+        previousRanksRef.current = newRanks;
 
     }, [sortedStocks]);
 
