@@ -92,12 +92,12 @@ export default function SwipeClient() {
 
               // Find the oldest value in the last minute.
               const recentHistory1Min = newHistory.filter((h) => new Date(h.timestamp) > oneMinuteAgo);
-              const oldestValueInLastMinute = recentHistory1Min.length > 0 ? recentHistory1Min[0].value : currentData.currentValue;
+              const oldestValueInLastMinute = recentHistory1Min.length > 1 ? recentHistory1Min[0].value : currentData.currentValue;
               const valueChangeLastMinute = newValue - oldestValueInLastMinute;
 
               // Find the oldest value in the last 5 minutes.
               const recentHistory5Min = newHistory.filter((h) => new Date(h.timestamp) > fiveMinutesAgo);
-              const oldestValueInLast5Minutes = recentHistory5Min.length > 0 ? recentHistory5Min[0].value : currentData.currentValue;
+              const oldestValueInLast5Minutes = recentHistory5Min.length > 1 ? recentHistory5Min[0].value : currentData.currentValue;
               const valueChangeLast5Minutes = newValue - oldestValueInLast5Minutes;
               const percentChangeLast5Minutes = (valueChangeLast5Minutes / newValue) * 100;
 
