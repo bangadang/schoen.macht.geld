@@ -158,16 +158,14 @@ export default function TerminalClient() {
             });
         } else {
             // On the first run, everything is 'same'.
-            newRanks.forEach((rank, stockId) => changes.set(stockId, 'same'));
+            newRanks.forEach((_rank, stockId) => changes.set(stockId, 'same'));
         }
 
         setRankChanges(changes);
+        
+        // CRITICAL: Update the ref for the *next* render *after* calculating changes.
+        prevRanksRef.current = newRanks;
 
-        // Update the ref for the next render.
-        // The cleanup function is the key to ensuring the previous state is correctly captured.
-        return () => {
-          prevRanksRef.current = newRanks;
-        };
     }, [sortedStocks]);
 
 
@@ -190,7 +188,7 @@ export default function TerminalClient() {
           </TableHeader>
           <TableBody>
             {sortedStocks
-              .map((stock) => {
+              .map((stock, index) => {
                 const changeLast5MinPositive = (stock.valueChangeLast5Minutes ?? 0) >= 0;
                 const rankChange = rankChanges.get(stock.id);
 
@@ -213,7 +211,7 @@ export default function TerminalClient() {
                   >
                     <TableCell className="w-12 px-2 py-1">{RankIndicator}</TableCell>
                     <TableCell className="font-bold px-2 py-1">{stock.ticker}</TableCell>
-                    <TableCell className="px-2 py-1">{stock.nickname}</TableCell>
+                    <TableCell className="px-2 py-1 truncate">{stock.nickname}</TableCell>
                     <TableCell
                       className={cn(
                         'text-right font-bold px-2 py-1',
@@ -252,5 +250,3 @@ export default function TerminalClient() {
     </div>
   );
 }
-
-    
