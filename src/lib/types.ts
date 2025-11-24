@@ -12,4 +12,6 @@ export interface Stock {
   valueChangeLast5Minutes: number;
   percentChangeLast5Minutes: number;
   history: { value: number, timestamp: string }[];
+  rank?: number;
+  previousRank?: number;
 }
