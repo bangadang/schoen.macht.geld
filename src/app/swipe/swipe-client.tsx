@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, X, Loader2 } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, runTransaction, getDocs } from 'firebase/firestore';
+import { collection, doc, runTransaction, writeBatch, getDocs } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
@@ -99,49 +99,60 @@ export default function SwipeClient() {
            await runTransaction(firestore, async (transaction) => {
               const allDocsSnapshot = await getDocs(collection(firestore, 'titles'));
               const allStocks = allDocsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Stock));
-              const currentStockDoc = allStocks.find(s => s.id === stockIdToUpdate);
+              
+              // 1. Get current ranks for all stocks before any changes.
+              const stocksSortedByValue = [...allStocks].sort((a,b) => b.currentValue - a.currentValue);
+              const previousRanks = new Map<string, number>();
+              stocksSortedByValue.forEach((stock, index) => {
+                previousRanks.set(stock.id, index + 1);
+              });
 
+              // 2. Find the specific stock we are updating.
+              const currentStockDoc = allStocks.find(s => s.id === stockIdToUpdate);
               if (!currentStockDoc) {
                 throw "Document does not exist!";
               }
-
-              // Calculate previous rank
-              const sortedByValue = [...allStocks].sort((a,b) => b.currentValue - a.currentValue);
-              const previousRank = sortedByValue.findIndex(s => s.id === stockIdToUpdate) + 1;
-
               const currentData = currentStockDoc;
+
+              // 3. Calculate all new values for the swiped stock.
               const now = new Date();
               const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
               const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-              // Calculate new values.
               const newValue = currentData.currentValue + valueChange;
               const newChange = newValue - currentData.initialValue;
               const newPercentChange = (newChange / currentData.initialValue) * 100;
               
-              // Update history, keeping only the last 100 entries.
               let newHistory = [...currentData.history, { value: newValue, timestamp: now.toISOString() }];
               if (newHistory.length > 100) {
                 newHistory = newHistory.slice(newHistory.length - 100);
               }
 
-              // Find the oldest value in the last minute.
               const recentHistory1Min = newHistory.filter((h) => new Date(h.timestamp) > oneMinuteAgo);
               const oldestValueInLastMinute = recentHistory1Min.length > 1 ? recentHistory1Min[0].value : currentData.currentValue;
               const valueChangeLastMinute = newValue - oldestValueInLastMinute;
 
-              // Find the oldest value in the last 5 minutes.
               const recentHistory5Min = newHistory.filter((h) => new Date(h.timestamp) > fiveMinutesAgo);
               const oldestValueInLast5Minutes = recentHistory5Min.length > 1 ? recentHistory5Min[0].value : currentData.currentValue;
               const valueChangeLast5Minutes = newValue - oldestValueInLast5Minutes;
               const percentChangeLast5Minutes = (valueChangeLast5Minutes / newValue) * 100;
+              
+              // 4. Create a list of all stocks with the updated value for the swiped one.
+              const updatedStockListForRanking = allStocks.map(s => 
+                s.id === stockIdToUpdate ? { ...s, currentValue: newValue } : s
+              );
 
-              // Calculate new rank
-              const updatedStocks = allStocks.map(s => s.id === stockIdToUpdate ? { ...s, currentValue: newValue } : s);
-              const newlySorted = updatedStocks.sort((a,b) => b.currentValue - a.currentValue);
-              const newRank = newlySorted.findIndex(s => s.id === stockIdToUpdate) + 1;
+              // 5. Calculate the new ranks for all stocks.
+              const newlySorted = updatedStockListForRanking.sort((a,b) => b.currentValue - a.currentValue);
+              const newRanks = new Map<string, number>();
+              newlySorted.forEach((stock, index) => {
+                newRanks.set(stock.id, index + 1);
+              });
 
-              const updatedData = {
+              // 6. Use a batched write to update all documents.
+              const batch = writeBatch(firestore);
+              
+              const swipedStockUpdate: Partial<Stock> = {
                 currentValue: newValue,
                 change: newChange,
                 percentChange: newPercentChange,
@@ -149,12 +160,13 @@ export default function SwipeClient() {
                 valueChangeLast5Minutes: valueChangeLast5Minutes,
                 percentChangeLast5Minutes: percentChangeLast5Minutes,
                 history: newHistory,
-                rank: newRank,
-                previousRank: previousRank,
+                rank: newRanks.get(stockIdToUpdate),
+                previousRank: previousRanks.get(stockIdToUpdate),
               };
+              batch.update(stockRef, swipedStockUpdate);
 
-              // Update the document in the transaction.
-              transaction.update(stockRef, updatedData);
+              // Commit the batch.
+              await batch.commit();
            });
 
         } catch (e) {
