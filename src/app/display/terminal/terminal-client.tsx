@@ -12,23 +12,9 @@ import {
 import type { Stock } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-
-/**
- * A custom hook that returns the value of a variable from the previous render.
- * This is a standard and reliable way to compare state/props between renders.
- * @param value The value to track.
- * @returns The value from the previous render, or undefined on the first render.
- */
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
-  useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
-}
 
 
 /**
@@ -144,36 +130,6 @@ export default function TerminalClient() {
       return stocks ? [...stocks].sort((a, b) => b.currentValue - a.currentValue) : [];
     }, [stocks]);
 
-    // Use the custom hook to get the previous render's sorted stocks.
-    const prevSortedStocks = usePrevious(sortedStocks);
-
-    const rankChanges = useMemo(() => {
-      const changes = new Map<string, 'up' | 'down' | 'same'>();
-      if (!prevSortedStocks || prevSortedStocks.length !== sortedStocks.length) {
-        sortedStocks.forEach(stock => changes.set(stock.id, 'same'));
-        return changes;
-      }
-  
-      const newRanks = new Map(sortedStocks.map((s, i) => [s.id, i]));
-      const oldRanks = new Map(prevSortedStocks.map((s, i) => [s.id, i]));
-  
-      sortedStocks.forEach(stock => {
-        const newRank = newRanks.get(stock.id);
-        const oldRank = oldRanks.get(stock.id);
-  
-        if (oldRank === undefined || newRank === oldRank) {
-          changes.set(stock.id, 'same');
-        } else if (newRank! < oldRank) {
-          changes.set(stock.id, 'up');
-        } else {
-          changes.set(stock.id, 'down');
-        }
-      });
-  
-      return changes;
-    }, [sortedStocks, prevSortedStocks]);
-
-
   return (
     <div className="h-full flex flex-col p-2 bg-black text-green-400 font-mono overflow-hidden">
       <div className="flex justify-between items-center text-yellow-400 border-b-2 border-yellow-400 pb-1">
@@ -195,18 +151,15 @@ export default function TerminalClient() {
             {sortedStocks
               .map((stock) => {
                 const changeLast5MinPositive = (stock.valueChangeLast5Minutes ?? 0) >= 0;
-                const rankChange = rankChanges.get(stock.id) || 'same';
-
+                
                 let RankIndicator;
-                switch(rankChange) {
-                    case 'up':
-                        RankIndicator = <ArrowUp className="w-4 h-4 text-green-400" />;
-                        break;
-                    case 'down':
-                        RankIndicator = <ArrowDown className="w-4 h-4 text-red-500" />;
-                        break;
-                    default:
-                        RankIndicator = <Minus className="w-4 h-4 text-gray-600" />;
+                // If previous rank isn't set, default to 'same'.
+                if (!stock.rank || !stock.previousRank || stock.rank === stock.previousRank) {
+                  RankIndicator = <Minus className="w-4 h-4 text-gray-600" />;
+                } else if (stock.rank < stock.previousRank) {
+                  RankIndicator = <ArrowUp className="w-4 h-4 text-green-400" />;
+                } else {
+                  RankIndicator = <ArrowDown className="w-4 h-4 text-red-500" />;
                 }
 
                 return (

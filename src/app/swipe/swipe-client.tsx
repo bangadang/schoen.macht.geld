@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, X, Loader2 } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, runTransaction } from 'firebase/firestore';
+import { collection, doc, runTransaction, getDocs } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
@@ -97,12 +97,19 @@ export default function SwipeClient() {
           // Use a Firestore transaction to safely read and write the stock data.
           // This prevents race conditions if multiple users swipe the same stock at once.
            await runTransaction(firestore, async (transaction) => {
-              const stockDoc = await transaction.get(stockRef);
-              if (!stockDoc.exists()) {
+              const allDocsSnapshot = await getDocs(collection(firestore, 'titles'));
+              const allStocks = allDocsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Stock));
+              const currentStockDoc = allStocks.find(s => s.id === stockIdToUpdate);
+
+              if (!currentStockDoc) {
                 throw "Document does not exist!";
               }
 
-              const currentData = stockDoc.data() as Stock;
+              // Calculate previous rank
+              const sortedByValue = [...allStocks].sort((a,b) => b.currentValue - a.currentValue);
+              const previousRank = sortedByValue.findIndex(s => s.id === stockIdToUpdate) + 1;
+
+              const currentData = currentStockDoc;
               const now = new Date();
               const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
               const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
@@ -129,6 +136,11 @@ export default function SwipeClient() {
               const valueChangeLast5Minutes = newValue - oldestValueInLast5Minutes;
               const percentChangeLast5Minutes = (valueChangeLast5Minutes / newValue) * 100;
 
+              // Calculate new rank
+              const updatedStocks = allStocks.map(s => s.id === stockIdToUpdate ? { ...s, currentValue: newValue } : s);
+              const newlySorted = updatedStocks.sort((a,b) => b.currentValue - a.currentValue);
+              const newRank = newlySorted.findIndex(s => s.id === stockIdToUpdate) + 1;
+
               const updatedData = {
                 currentValue: newValue,
                 change: newChange,
@@ -137,6 +149,8 @@ export default function SwipeClient() {
                 valueChangeLast5Minutes: valueChangeLast5Minutes,
                 percentChangeLast5Minutes: percentChangeLast5Minutes,
                 history: newHistory,
+                rank: newRank,
+                previousRank: previousRank,
               };
 
               // Update the document in the transaction.
