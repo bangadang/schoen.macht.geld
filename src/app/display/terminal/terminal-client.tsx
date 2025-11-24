@@ -18,8 +18,9 @@ import { collection } from 'firebase/firestore';
 
 /**
  * A custom hook that returns the value of a variable from the previous render.
+ * This is a standard and reliable way to compare state/props between renders.
  * @param value The value to track.
- * @returns The value from the previous render.
+ * @returns The value from the previous render, or undefined on the first render.
  */
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -143,12 +144,13 @@ export default function TerminalClient() {
       return stocks ? [...stocks].sort((a, b) => b.currentValue - a.currentValue) : [];
     }, [stocks]);
 
+    // Use the custom hook to get the previous render's sorted stocks.
     const prevSortedStocks = usePrevious(sortedStocks);
 
     const rankChanges = useMemo(() => {
         const newRankChanges = new Map<string, 'up' | 'down' | 'same'>();
         
-        // If there's no previous state (e.g., first render), mark all as 'same'.
+        // If there's no previous state (e.g., first render or navigating back), mark all as 'same'.
         if (!prevSortedStocks || prevSortedStocks.length !== sortedStocks.length) {
           sortedStocks.forEach(stock => newRankChanges.set(stock.id, 'same'));
           return newRankChanges;
@@ -160,7 +162,7 @@ export default function TerminalClient() {
         newRanks.forEach((newRank, stockId) => {
           const oldRank = oldRanks.get(stockId);
           if (oldRank === undefined) {
-            newRankChanges.set(stockId, 'same'); // New item
+            newRankChanges.set(stockId, 'same'); // New item added to the market.
           } else if (newRank < oldRank) {
             newRankChanges.set(stockId, 'up');
           } else if (newRank > oldRank) {
