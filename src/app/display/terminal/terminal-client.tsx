@@ -12,7 +12,7 @@ import {
 import type { Stock } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -127,7 +127,7 @@ export default function TerminalClient() {
     const { data: stocks } = useCollection<Stock>(titlesCollection);
     
     const sortedStocks = useMemo(() => {
-      return stocks ? [...stocks].sort((a, b) => b.currentValue - a.currentValue) : [];
+      return stocks ? [...stocks].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity)) : [];
     }, [stocks]);
 
   return (
@@ -153,7 +153,6 @@ export default function TerminalClient() {
                 const changeLast5MinPositive = (stock.valueChangeLast5Minutes ?? 0) >= 0;
                 
                 let RankIndicator;
-                // If previous rank isn't set, default to 'same'.
                 if (!stock.rank || !stock.previousRank || stock.rank === stock.previousRank) {
                   RankIndicator = <Minus className="w-4 h-4 text-gray-600" />;
                 } else if (stock.rank < stock.previousRank) {

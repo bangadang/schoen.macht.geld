@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, X, Loader2 } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, runTransaction, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, doc, runTransaction, writeBatch, getDocs, WriteBatch } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
@@ -91,8 +91,7 @@ export default function SwipeClient() {
         x.set(0);
         
         const valueChange = direction === 'right' ? 0.1 : -0.1;
-        const stockRef = doc(firestore, 'titles', stockIdToUpdate);
-
+        
         try {
           // Use a Firestore transaction to safely read and write the stock data.
           // This prevents race conditions if multiple users swipe the same stock at once.
@@ -120,22 +119,6 @@ export default function SwipeClient() {
               const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
               const newValue = currentData.currentValue + valueChange;
-              const newChange = newValue - currentData.initialValue;
-              const newPercentChange = (newChange / currentData.initialValue) * 100;
-              
-              let newHistory = [...currentData.history, { value: newValue, timestamp: now.toISOString() }];
-              if (newHistory.length > 100) {
-                newHistory = newHistory.slice(newHistory.length - 100);
-              }
-
-              const recentHistory1Min = newHistory.filter((h) => new Date(h.timestamp) > oneMinuteAgo);
-              const oldestValueInLastMinute = recentHistory1Min.length > 1 ? recentHistory1Min[0].value : currentData.currentValue;
-              const valueChangeLastMinute = newValue - oldestValueInLastMinute;
-
-              const recentHistory5Min = newHistory.filter((h) => new Date(h.timestamp) > fiveMinutesAgo);
-              const oldestValueInLast5Minutes = recentHistory5Min.length > 1 ? recentHistory5Min[0].value : currentData.currentValue;
-              const valueChangeLast5Minutes = newValue - oldestValueInLast5Minutes;
-              const percentChangeLast5Minutes = (valueChangeLast5Minutes / newValue) * 100;
               
               // 4. Create a list of all stocks with the updated value for the swiped one.
               const updatedStockListForRanking = allStocks.map(s => 
@@ -151,26 +134,54 @@ export default function SwipeClient() {
 
               // 6. Use a batched write to update all documents.
               const batch = writeBatch(firestore);
-              
-              const swipedStockUpdate: Partial<Stock> = {
-                currentValue: newValue,
-                change: newChange,
-                percentChange: newPercentChange,
-                valueChangeLastMinute: valueChangeLastMinute,
-                valueChangeLast5Minutes: valueChangeLast5Minutes,
-                percentChangeLast5Minutes: percentChangeLast5Minutes,
-                history: newHistory,
-                rank: newRanks.get(stockIdToUpdate),
-                previousRank: previousRanks.get(stockIdToUpdate),
-              };
-              batch.update(stockRef, swipedStockUpdate);
 
-              // Commit the batch.
+              for (const stock of allStocks) {
+                const stockRef = doc(firestore, 'titles', stock.id);
+                let updateData: Partial<Stock> = {
+                  rank: newRanks.get(stock.id),
+                  previousRank: previousRanks.get(stock.id),
+                };
+
+                // If this is the stock that was swiped, add all the detailed value changes.
+                if (stock.id === stockIdToUpdate) {
+                    const newChange = newValue - stock.initialValue;
+                    const newPercentChange = (newChange / stock.initialValue) * 100;
+                    
+                    let newHistory = [...stock.history, { value: newValue, timestamp: now.toISOString() }];
+                    if (newHistory.length > 100) {
+                      newHistory = newHistory.slice(newHistory.length - 100);
+                    }
+
+                    const recentHistory1Min = newHistory.filter((h) => new Date(h.timestamp) > oneMinuteAgo);
+                    const oldestValueInLastMinute = recentHistory1Min.length > 1 ? recentHistory1Min[0].value : stock.currentValue;
+                    const valueChangeLastMinute = newValue - oldestValueInLastMinute;
+
+                    const recentHistory5Min = newHistory.filter((h) => new Date(h.timestamp) > fiveMinutesAgo);
+                    const oldestValueInLast5Minutes = recentHistory5Min.length > 1 ? recentHistory5Min[0].value : stock.currentValue;
+                    const valueChangeLast5Minutes = newValue - oldestValueInLast5Minutes;
+                    const percentChangeLast5Minutes = (valueChangeLast5Minutes / newValue) * 100;
+                    
+                    updateData = {
+                        ...updateData,
+                        currentValue: newValue,
+                        change: newChange,
+                        percentChange: newPercentChange,
+                        valueChangeLastMinute: valueChangeLastMinute,
+                        valueChangeLast5Minutes: valueChangeLast5Minutes,
+                        percentChangeLast5Minutes: percentChangeLast5Minutes,
+                        history: newHistory,
+                    };
+                }
+                
+                batch.update(stockRef, updateData);
+              }
+              
               await batch.commit();
            });
 
         } catch (e) {
           console.error("Transaction failed: ", e);
+          const stockRef = doc(firestore, 'titles', stockIdToUpdate);
           // If the transaction fails, create and emit a contextual error.
           const permissionError = new FirestorePermissionError({
             path: stockRef.path,
