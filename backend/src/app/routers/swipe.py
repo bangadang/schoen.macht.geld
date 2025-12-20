@@ -48,6 +48,8 @@ async def swipe(
             logger.warning("Swipe on unknown ticker: {}", request.ticker)
             raise HTTPException(status_code=404, detail="Stock not found")
 
+        ticker = stock.ticker
+
         # Calculate price delta based on direction and user stats
         delta = calculate_price_delta(stock.price, request.direction, stats)
 
@@ -63,7 +65,7 @@ async def swipe(
 
         # Record price event
         price_event = PriceEvent(
-            ticker=stock.ticker,
+            ticker=ticker,
             price=new_price,
             change_type=change_type,
         )
@@ -73,19 +75,19 @@ async def swipe(
         session.add(stock)
         await session.commit()
 
-    logger.debug(
-        "{} {} -> {:.2f} (delta: {:.2f}, streak: {}, pickiness: {:.2f})",
-        request.ticker,
-        request.direction.value,
-        new_price,
-        delta,
-        stats.streak_length,
-        stats.pickiness_ratio,
-    )
+        logger.debug(
+            "{} {} -> {:.2f} (delta: {:.2f}, streak: {}, pickiness: {:.2f})",
+            request.ticker,
+            request.direction.value,
+            new_price,
+            delta,
+            stats.streak_length,
+            stats.pickiness_ratio,
+        )
 
-    return SwipeResponse(
-        ticker=stock.ticker,
-        new_price=new_price,
-        delta=delta,
-        swipe_token=token.encode(),
-    )
+        return SwipeResponse(
+            ticker=ticker,
+            new_price=new_price,
+            delta=delta,
+            swipe_token=token.encode(),
+        )
