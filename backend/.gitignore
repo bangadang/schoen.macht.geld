@@ -1,0 +1,20 @@
+# Environment
+.env
+.venv/
+
+# Database & storage
+backend.lock
+data/
+backups/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
