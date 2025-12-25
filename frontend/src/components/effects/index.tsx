@@ -11,6 +11,7 @@ import { GlitchMode } from './glitch-mode'
 import { DvdMode } from './dvd-mode'
 import { BinaryMode } from './binary-mode'
 import { BeatSyncMode } from './beat-sync-mode'
+import { BeatSyncLiteMode } from './beat-sync-lite-mode'
 import { SettingsPanel } from './settings-panel'
 
 // Effects that need body classes for CSS styling
@@ -88,6 +89,7 @@ export function EffectsLayer() {
       <DvdMode />
       <BinaryMode />
       <BeatSyncMode />
+      <BeatSyncLiteMode />
       <SettingsPanel />
     </>
   )
@@ -102,4 +104,5 @@ export { GlitchMode } from './glitch-mode'
 export { DvdMode } from './dvd-mode'
 export { BinaryMode } from './binary-mode'
 export { BeatSyncMode } from './beat-sync-mode'
+export { BeatSyncLiteMode } from './beat-sync-lite-mode'
 export { SettingsPanel } from './settings-panel'

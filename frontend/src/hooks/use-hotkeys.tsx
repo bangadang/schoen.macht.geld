@@ -26,6 +26,7 @@ const EFFECT_KEYS: { key: string; effect: EffectType; label: string }[] = [
   { key: '5', effect: 'redacted', label: 'Redacted' },
   { key: '6', effect: 'binary', label: 'Binary' },
   { key: '7', effect: 'dvd', label: 'DVD' },
+  { key: '9', effect: 'beatSyncLite', label: 'Beat Lite' },
   { key: '0', effect: 'beatSync', label: 'Beat Sync' },
 ]
 

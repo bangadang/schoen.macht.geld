@@ -11,7 +11,6 @@ export function BeatSyncMode() {
   // Calculate effect values based on intensity (0-100)
   const scaleAmount = 1 + (intensity / 100) * 0.08 // 1.0 to 1.08
   const rotateAmount = (intensity / 100) * 2 // 0 to 2 degrees
-  const translateAmount = (intensity / 100) * 12 // 0 to 12px
   const vignetteOpacity = (intensity / 100) * 0.25 // 0 to 0.25
   const flashOpacity = (intensity / 100) * 0.15 // 0 to 0.15
   const chromaticOffset = (intensity / 100) * 4 // 0 to 4px
@@ -21,7 +20,6 @@ export function BeatSyncMode() {
   const priceGlow = (intensity / 100) * 8 // 0 to 8px
 
   const [pulse, setPulse] = useState(false)
-  const [translateDir, setTranslateDir] = useState({ x: 0, y: 0 })
 
   const audioContextRef = useRef<AudioContext | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -37,11 +35,6 @@ export function BeatSyncMode() {
     const beatInterval = 60000 / bpm
 
     const triggerPulse = () => {
-      // Random direction for translation
-      setTranslateDir({
-        x: (Math.random() - 0.5) * 2,
-        y: (Math.random() - 0.5) * 2,
-      })
       setPulse(true)
       setTimeout(() => setPulse(false), Math.min(beatInterval * 0.25, 120))
     }
@@ -93,21 +86,27 @@ export function BeatSyncMode() {
       setBeatState({ bpm: 0, status: 'listening', confidence: 0 })
 
       // Listen for BPM updates using event emitter API
+      // Track previous BPM to avoid redundant pulse loop restarts
+      let lastBpm = 0
+      let lastStatus: string = 'idle'
+
       analyzer.on('bpm', (data) => {
         if (data.bpm && data.bpm.length > 0) {
           const topCandidate = data.bpm[0]
           const bpm = Math.round(topCandidate.tempo)
           const confidence = topCandidate.count / 100
 
-          setBeatState((prev) => {
-            if (prev.status !== 'synced' || Math.abs(prev.bpm - bpm) > 2) {
-              startPulseLoop(bpm)
-            }
-            return {
-              bpm,
-              status: 'synced',
-              confidence: Math.min(confidence, 1),
-            }
+          // Start pulse loop outside of setState to avoid nested state updates
+          if (lastStatus !== 'synced' || Math.abs(lastBpm - bpm) > 2) {
+            startPulseLoop(bpm)
+          }
+          lastBpm = bpm
+          lastStatus = 'synced'
+
+          setBeatState({
+            bpm,
+            status: 'synced',
+            confidence: Math.min(confidence, 1),
           })
         }
       })
@@ -133,7 +132,7 @@ export function BeatSyncMode() {
           error instanceof Error ? error.message : 'Failed to access microphone',
       })
     }
-  }, [startPulseLoop])
+  }, [startPulseLoop, setBeatState])
 
   const stopListening = useCallback(() => {
     stopPulseLoop()
@@ -154,7 +153,7 @@ export function BeatSyncMode() {
     }
 
     setBeatState({ bpm: 0, status: 'idle', confidence: 0 })
-  }, [stopPulseLoop])
+  }, [stopPulseLoop, setBeatState])
 
   // Start/stop based on effect enabled state
   useEffect(() => {
@@ -176,8 +175,6 @@ export function BeatSyncMode() {
       body.classList.add('effect-beatSync')
       body.style.setProperty('--beat-scale', String(scaleAmount))
       body.style.setProperty('--beat-rotate', `${rotateAmount}deg`)
-      body.style.setProperty('--beat-translate-x', `${translateDir.x * translateAmount}px`)
-      body.style.setProperty('--beat-translate-y', `${translateDir.y * translateAmount}px`)
       body.style.setProperty('--beat-vignette', String(vignetteOpacity))
       body.style.setProperty('--beat-flash', String(flashOpacity))
       body.style.setProperty('--beat-chromatic', `${chromaticOffset}px`)
@@ -189,8 +186,6 @@ export function BeatSyncMode() {
       body.classList.remove('effect-beatSync')
       body.style.removeProperty('--beat-scale')
       body.style.removeProperty('--beat-rotate')
-      body.style.removeProperty('--beat-translate-x')
-      body.style.removeProperty('--beat-translate-y')
       body.style.removeProperty('--beat-vignette')
       body.style.removeProperty('--beat-flash')
       body.style.removeProperty('--beat-chromatic')
@@ -204,8 +199,6 @@ export function BeatSyncMode() {
       body.classList.remove('effect-beatSync')
       body.style.removeProperty('--beat-scale')
       body.style.removeProperty('--beat-rotate')
-      body.style.removeProperty('--beat-translate-x')
-      body.style.removeProperty('--beat-translate-y')
       body.style.removeProperty('--beat-vignette')
       body.style.removeProperty('--beat-flash')
       body.style.removeProperty('--beat-chromatic')
@@ -214,7 +207,7 @@ export function BeatSyncMode() {
       body.style.removeProperty('--beat-glow')
       body.style.removeProperty('--beat-price-glow')
     }
-  }, [isEnabled, scaleAmount, rotateAmount, translateAmount, translateDir, vignetteOpacity, flashOpacity, chromaticOffset, scanlinesOpacity, cardScale, glowIntensity, priceGlow])
+  }, [isEnabled, scaleAmount, rotateAmount, vignetteOpacity, flashOpacity, chromaticOffset, scanlinesOpacity, cardScale, glowIntensity, priceGlow])
 
   // Apply pulse class
   useEffect(() => {
@@ -239,10 +232,12 @@ export function BeatSyncMode() {
       body.effect-beatSync > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
         transform-origin: center center;
         transition: transform 0.08s ease-out;
+        will-change: transform;
+        backface-visibility: hidden;
       }
 
       body.effect-beatSync.beat-pulse > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
-        transform: scale(var(--beat-scale, 1.012)) rotate(var(--beat-rotate, 0.3deg)) translate(var(--beat-translate-x, 0px), var(--beat-translate-y, 0px));
+        transform: scale(var(--beat-scale, 1.012)) rotate(var(--beat-rotate, 0.3deg));
       }
 
       /* Vignette pulse effect */
@@ -257,10 +252,14 @@ export function BeatSyncMode() {
           transparent 50%,
           rgba(0, 0, 0, 0) 100%
         );
-        transition: background 0.08s ease-out, opacity 0.08s ease-out;
+        transition: opacity 0.08s ease-out;
+        will-change: opacity;
+        backface-visibility: hidden;
+        opacity: 0;
       }
 
       body.effect-beatSync.beat-pulse::after {
+        opacity: 1;
         background: radial-gradient(
           ellipse at center,
           transparent 40%,
@@ -275,12 +274,15 @@ export function BeatSyncMode() {
         inset: 0;
         pointer-events: none;
         z-index: 9987;
-        background: rgba(255, 153, 0, 0);
-        transition: background 0.05s ease-out;
+        opacity: 0;
+        background: rgba(255, 153, 0, var(--beat-flash, 0.1));
+        transition: opacity 0.05s ease-out;
+        will-change: opacity;
+        backface-visibility: hidden;
       }
 
       body.effect-beatSync.beat-pulse::before {
-        background: rgba(255, 153, 0, var(--beat-flash, 0.1));
+        opacity: 1;
       }
 
       /* Scanlines pulse effect */
@@ -293,21 +295,16 @@ export function BeatSyncMode() {
           0deg,
           transparent,
           transparent 2px,
-          rgba(0, 0, 0, 0) 2px,
-          rgba(0, 0, 0, 0) 4px
-        );
-        opacity: 0;
-        transition: opacity 0.08s ease-out;
-      }
-
-      body.effect-beatSync.beat-pulse .beat-scanlines-overlay {
-        background: repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 2px,
           rgba(0, 0, 0, var(--beat-scanlines, 0.2)) 2px,
           rgba(0, 0, 0, var(--beat-scanlines, 0.2)) 4px
         );
+        opacity: 0;
+        transition: opacity 0.08s ease-out;
+        will-change: opacity;
+        backface-visibility: hidden;
+      }
+
+      body.effect-beatSync.beat-pulse .beat-scanlines-overlay {
         opacity: 1;
       }
 
@@ -321,6 +318,8 @@ export function BeatSyncMode() {
       /* Stock cards bounce effect */
       body.effect-beatSync [data-stock-card] {
         transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+        will-change: transform;
+        backface-visibility: hidden;
       }
 
       body.effect-beatSync.beat-pulse [data-stock-card] {
@@ -333,6 +332,7 @@ export function BeatSyncMode() {
       body.effect-beatSync .recharts-area path,
       body.effect-beatSync [data-chart-line] {
         transition: filter 0.08s ease-out;
+        will-change: filter;
       }
 
       body.effect-beatSync.beat-pulse .recharts-line path,
@@ -345,6 +345,8 @@ export function BeatSyncMode() {
       body.effect-beatSync [data-price],
       body.effect-beatSync [data-percent-change] {
         transition: text-shadow 0.08s ease-out, transform 0.08s ease-out;
+        will-change: transform;
+        backface-visibility: hidden;
       }
 
       body.effect-beatSync.beat-pulse [data-price],

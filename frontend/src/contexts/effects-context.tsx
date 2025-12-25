@@ -12,6 +12,7 @@ export type EffectType =
   | 'binary'
   | 'glitch'
   | 'beatSync'
+  | 'beatSyncLite'
   | 'phosphor'
   | 'flicker'
   | 'noise'
@@ -93,6 +94,7 @@ const DEFAULT_INTENSITIES: Record<EffectType, number> = {
   binary: DEFAULT_INTENSITY,
   glitch: DEFAULT_INTENSITY,
   beatSync: DEFAULT_INTENSITY,
+  beatSyncLite: DEFAULT_INTENSITY,
   phosphor: DEFAULT_INTENSITY,
   flicker: DEFAULT_INTENSITY,
   noise: DEFAULT_INTENSITY,

@@ -70,6 +70,11 @@ const VISUAL_MODES: EffectOption[] = [
     label: 'Beat Sync',
     description: 'Screen pulses to music via microphone',
   },
+  {
+    id: 'beatSyncLite',
+    label: 'Beat Sync Lite',
+    description: 'Lightweight pulse effect (better performance)',
+  },
 ]
 
 const RETRO_CRT_EFFECTS: EffectOption[] = [
