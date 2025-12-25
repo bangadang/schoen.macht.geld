@@ -4,12 +4,13 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { useSWRConfig } from 'swr';
 import type { StockResponse } from '@/lib/api/client';
 
-export type WebSocketEventType = 'new_leader' | 'all_time_high' | 'big_crash';
+export type WebSocketEventType = 'new_leader' | 'all_time_high' | 'big_crash' | 'market_open' | 'market_close';
 
 export interface WebSocketEvent {
   type: 'event';
   event_type: WebSocketEventType;
-  stock: StockResponse;
+  stock?: StockResponse;
+  leader?: StockResponse;
   metadata?: Record<string, unknown>;
 }
 

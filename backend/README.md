@@ -130,7 +130,7 @@ For rendering display views to images (useful for Raspberry Pi displays).
 WebSocket message types:
 - `stocks_update` - Full stock list
 - `stock_update` - Single stock change
-- `event` - Market events (new_leader, all_time_high, big_crash, market_open)
+- `event` - Market events (new_leader, all_time_high, big_crash, market_open, market_close)
 
 ### API Examples
 
@@ -222,7 +222,7 @@ The scheduler runs automatically:
 | Job | Interval | Description |
 |-----|----------|-------------|
 | Price Tick | 60s | Random ±5% price changes |
-| Snapshots | 60s | Capture prices, calculate rankings |
+| Snapshots | 10s | Capture prices, calculate rankings, market day events |
 | AI Tasks | 10s | Poll and process AI generation |
 
 ## Image Handling
@@ -261,9 +261,6 @@ All settings via environment variables or `.env` file.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | DATABASE_URL | sqlite+aiosqlite:///./data/stocks.db | Database path |
-| UVICORN_HOST | 127.0.0.1 | Bind address |
-| UVICORN_PORT | 8000 | Server port |
-| UVICORN_WORKERS | 1 | Worker processes |
 | ROOT_PATH | | Set to `/api` behind proxy |
 | CORS_ALLOW_ALL | false | Allow all origins (dev) |
 
@@ -274,8 +271,9 @@ All settings via environment variables or `.env` file.
 | STOCK_BASE_PRICE | 1000.0 | Initial stock price |
 | PRICE_TICK_INTERVAL | 60 | Seconds between random ticks |
 | PRICE_TICK_ENABLED | true | Enable random price updates |
-| SNAPSHOT_INTERVAL | 60 | Seconds between snapshots |
-| SNAPSHOT_RETENTION | 30 | Snapshots to keep per stock |
+| SNAPSHOT_INTERVAL | 10 | Seconds between snapshots |
+| SNAPSHOTS_PER_MARKET_DAY | 30 | Snapshots per market day (triggers event) |
+| SNAPSHOT_RETENTION | 90 | Snapshots to keep per stock |
 
 ### Static Files
 

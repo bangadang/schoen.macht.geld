@@ -67,9 +67,6 @@ RUN playwright install chromium
 # Default configuration (can be overridden)
 ENV DATABASE_URL="sqlite+aiosqlite:////app/data/stocks.db"
 ENV STATIC_DIR="/app/data/static"
-ENV UVICORN_HOST="0.0.0.0"
-ENV UVICORN_PORT="8080"
-ENV UVICORN_WORKERS="4"
 ENV SCREENSHOT_ENABLED="true"
 ENV SCREENSHOT_FRONTEND_URL="http://frontend:3000"
 

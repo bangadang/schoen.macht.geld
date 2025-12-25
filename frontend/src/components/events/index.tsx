@@ -5,6 +5,7 @@ import { NewLeaderCelebration } from './new-leader-celebration';
 import { AllTimeHigh } from './all-time-high';
 import { BigCrash } from './big-crash';
 import { MarketOpen } from './market-open';
+import { MarketClose } from './market-close';
 
 /**
  * EventsLayer renders event animations when they occur.
@@ -26,6 +27,8 @@ export function EventsLayer() {
       return <BigCrash event={currentEvent} onComplete={dismissEvent} />;
     case 'market_open':
       return <MarketOpen event={currentEvent} onComplete={dismissEvent} />;
+    case 'market_close':
+      return <MarketClose event={currentEvent} onComplete={dismissEvent} />;
     default:
       return null;
   }

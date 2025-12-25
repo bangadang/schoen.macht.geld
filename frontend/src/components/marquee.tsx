@@ -94,7 +94,7 @@ export function StockMarquee() {
   const animationDuration = (stocks?.length || 10) * 4;
 
   return (
-    <div className="h-8 flex items-center bg-black text-sm">
+    <div className="h-8 flex items-center bg-black text-sm shrink-0 overflow-hidden">
       <Marquee duration={animationDuration}>{repeatedContent}</Marquee>
     </div>
   );
@@ -186,7 +186,7 @@ export function HeadlinesMarquee() {
   const animationDuration = Math.max(30, headlineQueue.length * 8);
 
   return (
-    <div className="h-8 flex items-center bg-black text-sm">
+    <div className="h-8 flex items-center bg-black text-sm shrink-0 overflow-hidden">
       <Marquee duration={animationDuration}>{repeatedContent}</Marquee>
     </div>
   );

@@ -32,7 +32,7 @@ export default function DisplayLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { setSettingsPanelOpen, stockMarqueeEnabled, headlinesMarqueeEnabled } = useEffects();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   // Determine the active tab from the URL path to highlight the correct tab.
   const activeTab = pathname.split('/').pop() || 'ticker';
@@ -49,8 +49,9 @@ export default function DisplayLayout({
     { id: 'sector-sunburst', label: 'SEKTOREN', href: '/display/sector-sunburst', fKey: 'F8' },
   ];
 
-  // Update clock every second
+  // Update clock every second (set initial time on mount to avoid hydration mismatch)
   useEffect(() => {
+    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -86,6 +87,7 @@ export default function DisplayLayout({
 
   // Simulated market status (open during weekdays 9-17:30)
   const isMarketOpen = () => {
+    if (!currentTime) return false;
     const day = currentTime.getDay();
     const hour = currentTime.getHours();
     const minute = currentTime.getMinutes();
@@ -107,8 +109,8 @@ export default function DisplayLayout({
           <span className={isMarketOpen() ? 'text-green-500' : 'text-red-500'}>
             ● {isMarketOpen() ? 'OFFEN' : 'GESCHLOSSEN'}
           </span>
-          <span>{formatDate(currentTime)}</span>
-          <span className="text-primary font-bold">{formatTime(currentTime)}</span>
+          <span>{currentTime ? formatDate(currentTime) : '--.--.----'}</span>
+          <span className="text-primary font-bold">{currentTime ? formatTime(currentTime) : '--:--:--'}</span>
         </div>
       </header>
 
@@ -123,7 +125,7 @@ export default function DisplayLayout({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className="relative flex-1 overflow-hidden">{children}</main>
 
       {/* Headlines Marquee - optional */}
       {headlinesMarqueeEnabled && <HeadlinesMarquee />}
@@ -133,7 +135,7 @@ export default function DisplayLayout({
         <div className="flex items-center justify-between">
           <span>┌─ SMG BÖRSE ─┐</span>
           <span>LIVE │ {viewConfig.title}</span>
-          <span>┌─ {formatTime(currentTime)} ─┐</span>
+          <span>┌─ {currentTime ? formatTime(currentTime) : '--:--:--'} ─┐</span>
         </div>
       </footer>
 

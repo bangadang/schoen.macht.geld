@@ -3,6 +3,7 @@
 from fastapi import WebSocket
 from loguru import logger
 
+from app.config import settings
 from app.models.stock import Stock
 from app.schemas.stock import StockResponse
 
@@ -18,6 +19,9 @@ class ConnectionManager:
         # State for event detection
         self._previous_leader: str | None = None
         self._highest_prices: dict[str, float] = {}
+        # Market day tracking
+        self._snapshot_count: int = 0
+        self._market_day_count: int = 0
 
     async def connect(self, websocket: WebSocket) -> None:
         """Accept a new WebSocket connection."""
@@ -161,6 +165,59 @@ class ConnectionManager:
         # Broadcast all events
         for event in events:
             await self.broadcast(event)
+
+    async def track_snapshot_and_check_market_day(
+        self, stocks: list[Stock]
+    ) -> None:
+        """Track snapshot count and broadcast market day events.
+
+        Events:
+        - market_open: First snapshot, or first snapshot after market_close
+        - market_close: When snapshots_per_market_day snapshots complete
+        """
+        self._snapshot_count += 1
+        snapshots_per_day = settings.snapshots_per_market_day
+
+        # Market open: first snapshot of a new day
+        if self._snapshot_count == 1:
+            event: dict[str, object] = {
+                "type": "event",
+                "event_type": "market_open",
+                "metadata": {
+                    "market_day": self._market_day_count + 1,
+                    "snapshots_per_day": snapshots_per_day,
+                },
+            }
+            await self.broadcast(event)
+            logger.info("Event: market_open - Day {} started", self._market_day_count + 1)
+
+        # Market day end: full day complete
+        if self._snapshot_count >= snapshots_per_day:
+            self._market_day_count += 1
+            self._snapshot_count = 0
+
+            # Find leader for the day summary
+            leader = min(stocks, key=lambda s: s.rank or 999) if stocks else None
+
+            event = {
+                "type": "event",
+                "event_type": "market_close",
+                "metadata": {
+                    "market_day": self._market_day_count,
+                    "snapshots_per_day": snapshots_per_day,
+                },
+            }
+            if leader:
+                event["leader"] = StockResponse.model_validate(leader).model_dump(
+                    mode="json"
+                )
+
+            await self.broadcast(event)
+            logger.info(
+                "Event: market_close - Day {} complete ({} snapshots)",
+                self._market_day_count,
+                snapshots_per_day,
+            )
 
 
 # Global manager instance

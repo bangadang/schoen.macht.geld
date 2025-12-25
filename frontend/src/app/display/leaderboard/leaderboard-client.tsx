@@ -33,12 +33,12 @@ export default function LeaderboardClient() {
   }
 
   return (
-    <div className="h-full flex flex-col p-3 bg-black text-foreground overflow-hidden">
-      <div className="flex items-center justify-end mb-2">
+    <div className="flex flex-col p-3 bg-black text-foreground overflow-hidden absolute inset-0">
+      <div className="flex items-center justify-end mb-2 shrink-0">
         <span className="text-sm text-muted-foreground">{sortedStocks.length} TITEL</span>
       </div>
-      <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 h-full">
+      <div className="flex-1 overflow-auto min-h-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
           {sortedStocks.map((stock, index) => {
             const isPositive = stock.percent_change >= 0;
             const rankChange = stock.rank_change ?? 0;

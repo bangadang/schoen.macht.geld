@@ -151,6 +151,9 @@ async def snapshot_prices() -> None:
         # Detect and broadcast market events
         await ws_manager.detect_and_broadcast_events(stocks, previous_stocks)
 
+        # Track snapshots and check for market day completion
+        await ws_manager.track_snapshot_and_check_market_day(stocks)
+
         # Cleanup old snapshots
         await _cleanup_old_snapshots(session)
 
@@ -375,10 +378,13 @@ def start_scheduler() -> None:
         id="price_snapshot",
         replace_existing=True,
     )
+    market_day_duration = settings.snapshot_interval * settings.snapshots_per_market_day
     logger.info(
-        "Started snapshot scheduler (interval: {}s, retention: {})",
+        "Started snapshot scheduler (interval: {}s, retention: {}, market day: {}s / {} snapshots)",
         settings.snapshot_interval,
         settings.snapshot_retention,
+        market_day_duration,
+        settings.snapshots_per_market_day,
     )
 
     # AI task processor - enabled if any AI provider is configured

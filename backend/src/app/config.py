@@ -16,9 +16,7 @@ class Settings(BaseSettings):
     cors_allow_all: bool = False  # Set to true to allow all origins (dev only!)
 
     # ASGI server (uvicorn)
-    uvicorn_host: str = "127.0.0.1"
-    uvicorn_port: int = 8000
-    uvicorn_workers: int = 1  # Use 4+ for production
+
     root_path: str = ""  # Set to "/api" when behind a reverse proxy stripping prefix
     base_url: str = "http://localhost:8080"  # Public base URL for asset URLs
 
@@ -30,8 +28,9 @@ class Settings(BaseSettings):
     price_tick_enabled: bool = True
 
     # Price snapshot settings (for graphs and percentage change)
-    snapshot_interval: int = 60  # seconds between snapshots
-    snapshot_retention: int = 30  # number of snapshots to keep per stock
+    snapshot_interval: int = 10  # seconds between snapshots
+    snapshots_per_market_day: int = 30  # number of snapshots in a full market day
+    snapshot_retention: int = 90  # number of snapshots to keep per stock
 
     # Image upload settings
     static_dir: str = "data/static"
