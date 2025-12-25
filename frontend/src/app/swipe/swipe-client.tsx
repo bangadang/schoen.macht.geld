@@ -75,7 +75,7 @@ export default function SwipeClient() {
         try {
           const result = await submitSwipe(tickerToUpdate, direction, swipeToken);
           if (result) {
-            setSwipeToken(result.swipe_token);
+            setSwipeToken(result.token);
           }
           // Trigger refetch of stocks
           mutate();

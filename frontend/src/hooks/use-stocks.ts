@@ -91,13 +91,13 @@ export function useStockSnapshots(ticker: string | null, limit = 100) {
 export async function submitSwipe(
   ticker: string,
   direction: SwipeDirection,
-  swipeToken?: string | null
+  token?: string | null
 ) {
   const response = await swipeSwipePost({
-    body: {
+    query: {
       ticker,
       direction,
-      swipe_token: swipeToken,
+      token,
     },
   });
 
