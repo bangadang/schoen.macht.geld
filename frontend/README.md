@@ -5,18 +5,18 @@ Next.js frontend for the Schön. Macht. Geld. stock exchange party game.
 ## Requirements
 
 - Node.js 20+
-- pnpm
+- bun
 
 ## Setup
 
 ```bash
-pnpm install
+bun install
 ```
 
 ## Development
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 Runs at http://localhost:3000
@@ -24,13 +24,13 @@ Runs at http://localhost:3000
 By default, the frontend expects the backend API at `/api` (proxied via Caddy). For local development without Docker, set:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000 pnpm dev
+NEXT_PUBLIC_API_URL=http://localhost:8000 bun dev
 ```
 
 ## Build
 
 ```bash
-pnpm build
+bun run build
 ```
 
 The build uses `output: 'standalone'` for Docker deployment.
@@ -73,7 +73,7 @@ The API client is auto-generated from the backend's OpenAPI spec.
 ### Regenerate after backend changes
 
 ```bash
-pnpm generate-api
+bun generate-api
 ```
 
 This fetches `http://localhost:8080/openapi.json` and generates TypeScript types and functions in `src/lib/api/client/`.

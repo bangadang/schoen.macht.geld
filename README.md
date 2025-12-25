@@ -138,8 +138,8 @@ API docs at http://localhost:8080/api/docs, Admin at http://localhost:8080/api/a
 
 ```bash
 cd frontend
-pnpm install
-NEXT_PUBLIC_API_URL=http://localhost:8080 pnpm dev
+bun install
+NEXT_PUBLIC_API_URL=http://localhost:8080 bun dev
 ```
 
 Runs at http://localhost:3000
@@ -150,7 +150,7 @@ After backend API changes:
 
 ```bash
 cd frontend
-pnpm generate-api
+bun generate-api
 ```
 
 ## Production Deployment
