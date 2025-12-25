@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -11,7 +11,6 @@ import {
   Tooltip,
   ReferenceDot,
 } from 'recharts';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Trophy, Play, RotateCcw } from 'lucide-react';
 import { useRaceData, type RaceStock } from '@/hooks/use-stocks';
@@ -22,133 +21,124 @@ interface RaceStockWithValue extends RaceStock {
 }
 
 // Animation timing constants
-const FRAME_DURATION_MS = 800; // Time to display each frame
-const DOT_ANIMATION_DURATION_MS = 200; // Dot grows then shrinks
+const RACE_SYNC_INTERVAL_MS = 35000; // Must match the hook's sync interval
+const END_BUFFER_MS = 5000; // Time to show completed race before new data loads
 
-// Custom animated dot component for the current position with price label
-function AnimatedDot({
-  cx,
-  cy,
-  color,
-  price,
-  ticker,
-}: {
-  cx: number;
-  cy: number;
-  color: string;
-  price: number;
-  ticker: string;
-}) {
-  return (
-    <g>
-      {/* Outer expanding ring */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={16}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        opacity={0.5}
-        style={{
-          animation: `race-dot-ring ${DOT_ANIMATION_DURATION_MS}ms ease-out`,
-        }}
-      />
-      {/* Main dot with scale animation */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={8}
-        fill={color}
-        stroke="white"
-        strokeWidth={2}
-        style={{
-          animation: `race-dot-pulse ${DOT_ANIMATION_DURATION_MS}ms ease-out`,
-          transformOrigin: `${cx}px ${cy}px`,
-        }}
-      />
-      {/* Price label */}
-      <g
-        style={{
-          animation: `race-dot-pulse ${DOT_ANIMATION_DURATION_MS}ms ease-out`,
-          transformOrigin: `${cx}px ${cy}px`,
-        }}
-      >
-        {/* Background pill for readability */}
-        <rect
-          x={cx + 12}
-          y={cy - 10}
-          width={70}
-          height={20}
-          rx={4}
-          fill="rgba(0, 0, 0, 0.8)"
-          stroke={color}
-          strokeWidth={1}
-        />
-        {/* Price text */}
-        <text
-          x={cx + 47}
-          y={cy + 4}
-          textAnchor="middle"
-          fill="white"
-          fontSize={12}
-          fontFamily="monospace"
-          fontWeight="bold"
-        >
-          {price.toFixed(2)}
-        </text>
-      </g>
-    </g>
-  );
+// Interpolate between two values
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+// Easing function for smoother animation
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
  * Performance Race display.
  * Shows an animated line chart racing the top stocks against each other.
- * Each data point is revealed one at a time with ~1 second intervals.
+ * Smooth animation interpolates between data points.
  */
 export default function PerformanceRaceClient() {
   const { raceStocks, raceData, isLoading } = useRaceData(5, 30);
 
-  // Animation state
-  const [currentFrame, setCurrentFrame] = useState(0);
+  // Continuous animation progress (0 to totalFrames-1)
+  const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
 
   const totalFrames = raceData.length;
-  const isComplete = currentFrame >= totalFrames - 1;
+  const isComplete = progress >= totalFrames - 1;
+  const currentFrame = Math.floor(progress);
 
-  // Reset animation when data changes
+  // Calculate frame duration to fit animation within sync interval minus buffer
+  const frameDurationMs = useMemo(() => {
+    if (totalFrames <= 1) return 1000;
+    return (RACE_SYNC_INTERVAL_MS - END_BUFFER_MS) / (totalFrames - 1);
+  }, [totalFrames]);
+
+  // Track which stocks we're racing - reset when this changes
+  const stockTickersKey = useMemo(() => {
+    return raceStocks.map((s) => s.ticker).sort().join(',');
+  }, [raceStocks]);
+
+  const prevStockTickersRef = useRef<string>('');
+
+  // Reset animation when stocks change
   useEffect(() => {
-    if (raceData.length > 0) {
-      setCurrentFrame(0);
+    if (stockTickersKey && stockTickersKey !== prevStockTickersRef.current) {
+      prevStockTickersRef.current = stockTickersKey;
+      setProgress(0);
       setIsPlaying(true);
     }
-  }, [raceData.length]);
+  }, [stockTickersKey]);
 
-  // Animation timer - advance one frame per FRAME_DURATION_MS
+  // Smooth animation loop using requestAnimationFrame
   useEffect(() => {
-    if (!isPlaying || isComplete || totalFrames === 0) return;
+    if (!isPlaying || totalFrames === 0) return;
 
-    const timer = setInterval(() => {
-      setCurrentFrame((prev) => {
-        if (prev >= totalFrames - 1) {
+    const animate = (currentTime: number) => {
+      if (lastTimeRef.current === 0) {
+        lastTimeRef.current = currentTime;
+      }
+
+      const deltaTime = currentTime - lastTimeRef.current;
+      lastTimeRef.current = currentTime;
+
+      // Calculate progress increment based on dynamic frame duration
+      const progressIncrement = deltaTime / frameDurationMs;
+
+      setProgress((prev) => {
+        const next = prev + progressIncrement;
+        if (next >= totalFrames - 1) {
           setIsPlaying(false);
-          return prev;
+          return totalFrames - 1;
         }
-        return prev + 1;
+        return next;
       });
-    }, FRAME_DURATION_MS);
 
-    return () => clearInterval(timer);
-  }, [isPlaying, isComplete, totalFrames]);
+      animationRef.current = requestAnimationFrame(animate);
+    };
 
-  // Create chart data with full X axis, but null values for future points
+    lastTimeRef.current = 0;
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, totalFrames, frameDurationMs]);
+
+  // No auto-restart - let the data refresh trigger a new race
+
+  // Get interpolated value for a stock at current progress
+  const getInterpolatedValue = useCallback(
+    (ticker: string): number | null => {
+      if (raceData.length === 0) return null;
+
+      const frame = Math.floor(progress);
+      const t = easeInOutCubic(progress - frame);
+
+      const currentValue = raceData[frame]?.[ticker] as number | undefined;
+      const nextValue = raceData[frame + 1]?.[ticker] as number | undefined;
+
+      if (currentValue === undefined) return null;
+      if (nextValue === undefined || frame >= totalFrames - 1) return currentValue;
+
+      return lerp(currentValue, nextValue, t);
+    },
+    [raceData, progress, totalFrames]
+  );
+
+  // Create chart data - reveal frames one at a time (no line interpolation to avoid jumps)
   const chartData = useMemo(() => {
     return raceData.map((point, index) => {
       if (index <= currentFrame) {
-        return point; // Show actual values for revealed points
+        return point; // Show completed frames
       }
-      // Return point with only timestamp (null values for stocks)
+      // Future frames - null values
       const emptyPoint: Record<string, string | null> = { timestamp: point.timestamp };
       raceStocks.forEach((stock) => {
         emptyPoint[stock.ticker] = null;
@@ -157,33 +147,25 @@ export default function PerformanceRaceClient() {
     });
   }, [raceData, currentFrame, raceStocks]);
 
-  // Get visible data (only up to current frame) for ranking/display
-  const visibleData = useMemo(() => {
-    return raceData.slice(0, currentFrame + 1);
-  }, [raceData, currentFrame]);
-
-  // Sort stocks by their value at the current frame
+  // Sort stocks by their interpolated value
   const sortedStocks = useMemo((): RaceStockWithValue[] => {
-    if (visibleData.length === 0 || raceStocks.length === 0) {
+    if (raceData.length === 0 || raceStocks.length === 0) {
       return raceStocks.map((s) => ({ ...s, raceValue: s.currentPrice }));
     }
 
-    const currentPoint = visibleData[visibleData.length - 1];
     return [...raceStocks]
       .map((stock) => ({
         ...stock,
-        raceValue: (currentPoint[stock.ticker] as number) ?? stock.currentPrice,
+        raceValue: getInterpolatedValue(stock.ticker) ?? stock.currentPrice,
       }))
       .sort((a, b) => b.raceValue - a.raceValue);
-  }, [raceStocks, visibleData]);
+  }, [raceStocks, raceData, getInterpolatedValue]);
 
-  // Get current timestamp for display
-  const currentTimestamp = visibleData.length > 0
-    ? visibleData[visibleData.length - 1].timestamp
-    : '';
+  // Get current timestamp for display (from completed frame)
+  const currentTimestamp = raceData[currentFrame]?.timestamp ?? '';
 
   const handleRestart = useCallback(() => {
-    setCurrentFrame(0);
+    setProgress(0);
     setIsPlaying(true);
   }, []);
 
@@ -252,8 +234,8 @@ export default function PerformanceRaceClient() {
       {/* Progress bar */}
       <div className="h-1 bg-zinc-800 rounded-full mb-4 overflow-hidden">
         <div
-          className="h-full bg-yellow-500 transition-all duration-1000 ease-linear"
-          style={{ width: `${((currentFrame + 1) / totalFrames) * 100}%` }}
+          className="h-full bg-yellow-500"
+          style={{ width: `${((progress + 1) / totalFrames) * 100}%` }}
         />
       </div>
 
@@ -264,7 +246,7 @@ export default function PerformanceRaceClient() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+              margin={{ top: 20, right: 250, left: 0, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
               <XAxis
@@ -305,117 +287,133 @@ export default function PerformanceRaceClient() {
                   isAnimationActive={false}
                 />
               ))}
-              {/* Animated dots at current position with price labels */}
-              {visibleData.length > 0 &&
-                raceStocks.map((stock) => {
-                  const currentValue = visibleData[visibleData.length - 1][stock.ticker] as number;
-                  if (currentValue === undefined) return null;
-                  return (
-                    <ReferenceDot
-                      key={`dot-${stock.ticker}-${currentFrame}`}
-                      x={currentTimestamp}
-                      y={currentValue}
-                      shape={(props) => (
-                        <AnimatedDot
-                          cx={props.cx ?? 0}
-                          cy={props.cy ?? 0}
-                          color={stock.color}
-                          price={currentValue}
-                          ticker={stock.ticker}
-                        />
-                      )}
-                    />
-                  );
-                })}
+              {/* Stock cards positioned at line endpoints */}
+              {sortedStocks.map((stock, index) => {
+                const position = index + 1;
+                return (
+                  <ReferenceDot
+                    key={`card-${stock.ticker}`}
+                    x={currentTimestamp}
+                    y={stock.raceValue}
+                    r={0}
+                    shape={(props) => (
+                      <RaceStockCard
+                        cx={props.cx ?? 0}
+                        cy={props.cy ?? 0}
+                        stock={stock}
+                        position={position}
+                      />
+                    )}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
-        </div>
-
-        {/* Legend / Leaderboard */}
-        <div className="w-80 flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wide mb-2">
-            Rangliste
-          </h2>
-          {sortedStocks.map((stock, index) => (
-            <RaceStockCard key={stock.ticker} stock={stock} position={index + 1} />
-          ))}
         </div>
       </div>
     </div>
   );
 }
 
+// SVG-based stock card for positioning at line endpoints
 function RaceStockCard({
+  cx,
+  cy,
   stock,
   position,
 }: {
+  cx: number;
+  cy: number;
   stock: RaceStockWithValue;
   position: number;
 }) {
-  const isPositive = stock.percentChange >= 0;
+  const cardWidth = 220;
+  const cardHeight = 50;
+  const offsetX = 15;
+  const offsetY = -cardHeight / 2;
+
+  // Position colors for medals
+  const positionColors = {
+    1: { bg: '#eab308', text: '#000' }, // gold
+    2: { bg: '#9ca3af', text: '#000' }, // silver
+    3: { bg: '#b45309', text: '#fff' }, // bronze
+  };
+  const posColor = positionColors[position as 1 | 2 | 3] || { bg: '#3f3f46', text: '#fff' };
 
   return (
-    <div
-      className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900 border-l-4 transition-all duration-300"
-      style={{ borderLeftColor: stock.color }}
-    >
-      {/* Position */}
-      <div
-        className={cn(
-          'w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0 transition-all duration-300',
-          position === 1 && 'bg-yellow-500 text-black scale-110',
-          position === 2 && 'bg-gray-400 text-black',
-          position === 3 && 'bg-amber-700 text-white',
-          position > 3 && 'bg-zinc-700 text-white'
-        )}
+    <g transform={`translate(${cx + offsetX}, ${cy + offsetY})`}>
+      {/* Card background */}
+      <rect
+        x={0}
+        y={0}
+        width={cardWidth}
+        height={cardHeight}
+        rx={8}
+        fill="#18181b"
+        stroke={stock.color}
+        strokeWidth={2}
+      />
+
+      {/* Position badge */}
+      <circle
+        cx={25}
+        cy={cardHeight / 2}
+        r={14}
+        fill={posColor.bg}
+      />
+      <text
+        x={25}
+        y={cardHeight / 2 + 5}
+        textAnchor="middle"
+        fill={posColor.text}
+        fontSize={14}
+        fontWeight="bold"
       >
         {position}
-      </div>
+      </text>
 
-      {/* Stock image */}
-      <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 flex-shrink-0">
-        {stock.image ? (
-          <Image
-            unoptimized
-            src={stock.image}
-            alt={stock.title}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xs font-bold">
-            {stock.ticker.slice(0, 2)}
-          </div>
-        )}
-      </div>
-
-      {/* Stock info */}
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold truncate">{stock.title}</div>
-        <div className="text-sm text-gray-400 font-mono">{stock.ticker}</div>
-      </div>
-
-      {/* Race value (current chart price) */}
-      <div
-        className="px-2 h-8 rounded flex items-center justify-center font-mono font-bold text-sm transition-all duration-300"
-        style={{ backgroundColor: stock.color + '33', color: stock.color }}
+      {/* Stock title */}
+      <text
+        x={50}
+        y={cardHeight / 2 - 5}
+        fill="white"
+        fontSize={13}
+        fontWeight="600"
       >
-        {stock.raceValue.toFixed(2)}
-      </div>
+        {stock.title.length > 14 ? stock.title.slice(0, 14) + '…' : stock.title}
+      </text>
 
-      {/* Price & change */}
-      <div className="text-right flex-shrink-0">
-        <div className="font-mono font-semibold">{stock.currentPrice.toFixed(2)}</div>
-        <div
-          className={cn(
-            'text-sm font-mono',
-            isPositive ? 'text-green-400' : 'text-red-400'
-          )}
-        >
-          {isPositive ? '+' : ''}
-          {stock.percentChange.toFixed(1)}%
-        </div>
-      </div>
-    </div>
+      {/* Stock ticker */}
+      <text
+        x={50}
+        y={cardHeight / 2 + 12}
+        fill="#9ca3af"
+        fontSize={11}
+        fontFamily="monospace"
+      >
+        {stock.ticker}
+      </text>
+
+      {/* Price value */}
+      <rect
+        x={cardWidth - 75}
+        y={cardHeight / 2 - 12}
+        width={65}
+        height={24}
+        rx={4}
+        fill={stock.color + '33'}
+      />
+      <text
+        x={cardWidth - 42}
+        y={cardHeight / 2 + 4}
+        textAnchor="middle"
+        fill={stock.color}
+        fontSize={12}
+        fontWeight="bold"
+        fontFamily="monospace"
+      >
+        {stock.raceValue.toFixed(1)}
+      </text>
+    </g>
   );
 }

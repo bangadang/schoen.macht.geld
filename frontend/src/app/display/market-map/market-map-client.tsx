@@ -10,14 +10,23 @@ import type { StockResponse } from '@/lib/api/client';
  * It renders each cell of the treemap, styling it based on the stock's performance.
  */
 const CustomizedContent = (props: any) => {
-  const { x, y, width, height, name, percent_change, ticker } = props;
+  const { x, y, width, height, name, percent_change, ticker, price } = props;
 
   // Don't render cells that are too small to be readable
   if (width < 50 || height < 40) {
     return null;
   }
 
-  const isPositive = percent_change >= 0;
+  const isPositive = percent_change > 0;
+  const isNegative = percent_change < 0;
+  const isNeutral = percent_change === 0;
+
+  // Color based on performance: green for positive, red for negative, gray for neutral
+  const fillColor = isPositive
+    ? 'hsl(142.1 76.2% 36.3%)'
+    : isNegative
+      ? 'hsl(0 72.2% 50.6%)'
+      : 'hsl(220 10% 40%)';
 
   return (
     <g>
@@ -27,7 +36,7 @@ const CustomizedContent = (props: any) => {
         width={width}
         height={height}
         style={{
-          fill: isPositive ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(0 72.2% 50.6%)',
+          fill: fillColor,
           stroke: '#1f2937',
           strokeWidth: 2,
           opacity: 0.8,
@@ -40,26 +49,33 @@ const CustomizedContent = (props: any) => {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'flex-start',
+            justifyContent: 'space-between',
             color: 'white',
             padding: '4px',
           }}
         >
-          <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{ticker}</div>
-          <div
-            style={{
-              fontSize: '0.8rem',
-              opacity: 0.8,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {name}
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{ticker}</div>
+            <div
+              style={{
+                fontSize: '0.8rem',
+                opacity: 0.8,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {name}
+            </div>
           </div>
-          <div style={{ marginTop: 'auto', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            {isPositive ? '+' : ''}
-            {(percent_change ?? 0).toFixed(2)}%
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div style={{ fontSize: '1rem', fontFamily: 'monospace' }}>
+              {price?.toFixed(2)} CHF
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {isPositive ? '+' : ''}
+              {(percent_change ?? 0).toFixed(2)}%
+            </div>
           </div>
         </div>
       </foreignObject>

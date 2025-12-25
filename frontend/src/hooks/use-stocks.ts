@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import useSWR from 'swr';
 import {
   listStocksStocksGet,
@@ -160,11 +160,47 @@ const RACE_COLORS = [
   '#8b5cf6', // violet
 ];
 
-// Fallback sync interval for race data (with WebSocket, this is just a safety net)
-const RACE_SYNC_INTERVAL_MS = 60000;
+// Sync interval for race data - controls how often new random stocks are selected
+const RACE_SYNC_INTERVAL_MS = 35000;
+
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 export function useRaceData(count = 5, snapshotLimit = 30) {
-  const { stocks } = useStocks({ order: 'rank', limit: count });
+  // Fetch all stocks, then randomly pick `count` for the race
+  const { stocks: allStocks } = useStocks();
+
+  // Store selected tickers separately - only changes when randomSeed changes
+  const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
+  const [randomSeed, setRandomSeed] = useState(() => Date.now());
+
+  // Update selected tickers only when randomSeed changes (not on websocket updates)
+  // Also run on initial load when we first get stocks
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (allStocks.length === 0) return;
+    // Only re-select on seed change, OR on first load
+    if (hasInitializedRef.current && selectedTickers.length > 0) return;
+    hasInitializedRef.current = true;
+    const shuffled = shuffleArray(allStocks);
+    const selected = shuffled.slice(0, count).map((s) => s.ticker);
+    setSelectedTickers(selected);
+  }, [randomSeed, count, allStocks.length, selectedTickers.length]);
+
+  // Get current stock data for selected tickers
+  const stocks = useMemo(() => {
+    if (selectedTickers.length === 0) return [];
+    return selectedTickers
+      .map((ticker) => allStocks.find((s) => s.ticker === ticker))
+      .filter((s): s is StockResponse => s !== undefined);
+  }, [allStocks, selectedTickers]);
 
   const { data, error, isLoading, mutate } = useSWR(
     stocks.length > 0 ? ['race-data', stocks.map((s) => s.ticker).join(','), snapshotLimit] : null,
@@ -209,27 +245,45 @@ export function useRaceData(count = 5, snapshotLimit = 30) {
       // Sort by timestamp and build the data array
       const sortedTimestamps = Array.from(timestampMap.keys()).sort();
 
+      // If we have more timestamps than snapshotLimit, sample evenly
+      let selectedTimestamps = sortedTimestamps;
+      if (sortedTimestamps.length > snapshotLimit) {
+        const step = sortedTimestamps.length / snapshotLimit;
+        selectedTimestamps = [];
+        for (let i = 0; i < snapshotLimit; i++) {
+          const idx = Math.floor(i * step);
+          selectedTimestamps.push(sortedTimestamps[idx]);
+        }
+      }
+
       // Forward-fill missing values
       const raceData: RaceDataPoint[] = [];
       const lastValues: Record<string, number> = {};
 
+      // Pre-fill lastValues by iterating through all timestamps in order
       sortedTimestamps.forEach((ts) => {
-        const point: RaceDataPoint = {
-          timestamp: new Date(ts).toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        };
-
         stocks.forEach((stock) => {
           const value = timestampMap.get(ts)?.[stock.ticker];
           if (value !== undefined) {
             lastValues[stock.ticker] = value;
           }
-          point[stock.ticker] = lastValues[stock.ticker] ?? stock.price;
         });
 
-        raceData.push(point);
+        // Only add point if this timestamp is selected
+        if (selectedTimestamps.includes(ts)) {
+          const point: RaceDataPoint = {
+            timestamp: new Date(ts).toLocaleTimeString('de-DE', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          };
+
+          stocks.forEach((stock) => {
+            point[stock.ticker] = lastValues[stock.ticker] ?? stock.price;
+          });
+
+          raceData.push(point);
+        }
       });
 
       return { raceStocks, raceData };
@@ -240,7 +294,11 @@ export function useRaceData(count = 5, snapshotLimit = 30) {
   );
 
   // Sync revalidation to wall clock (slower for race data)
-  const revalidate = useCallback(() => mutate(), [mutate]);
+  // Also pick new random stocks on each revalidation
+  const revalidate = useCallback(() => {
+    setRandomSeed(Date.now());
+    mutate();
+  }, [mutate]);
   useSyncedRevalidation(revalidate, RACE_SYNC_INTERVAL_MS);
 
   return {

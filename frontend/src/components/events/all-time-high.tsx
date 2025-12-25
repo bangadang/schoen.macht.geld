@@ -93,11 +93,11 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
             className="relative"
           >
             <Rocket className="w-32 h-32 text-white -rotate-45" />
-            {/* Flame */}
+            {/* Flame - positioned at rocket exhaust (bottom-left after -45° rotation) */}
             <motion.div
               animate={{ scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] }}
               transition={{ duration: 0.2, repeat: Infinity }}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-24 bg-gradient-to-t from-orange-600 via-yellow-500 to-transparent rounded-full blur-sm rotate-45"
+              className="absolute -bottom-6 left-2 w-16 h-24 bg-gradient-to-t from-orange-600 via-yellow-500 to-transparent rounded-full blur-sm -z-10"
             />
           </motion.div>
 

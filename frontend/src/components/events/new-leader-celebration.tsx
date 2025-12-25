@@ -29,15 +29,16 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);
 
-  // Generate confetti particles
-  const confetti = Array.from({ length: 50 }).map((_, i) => ({
+  // Generate confetti particles - more particles for fuller effect
+  const confetti = Array.from({ length: 150 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 2 + Math.random() * 2,
-    color: ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#9370DB', '#32CD32'][i % 6],
-    size: 8 + Math.random() * 8,
+    delay: Math.random() * 1.5,
+    duration: 2 + Math.random() * 3,
+    color: ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#9370DB', '#32CD32', '#FF69B4', '#00FF7F'][i % 8],
+    size: 6 + Math.random() * 12,
     rotation: Math.random() * 360,
+    swayAmount: 20 + Math.random() * 40,
   }));
 
   return (
@@ -63,27 +64,34 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
             <motion.div
               key={particle.id}
               initial={{
-                x: `${particle.x}vw`,
-                y: '-10vh',
+                y: -20,
                 rotate: 0,
                 opacity: 1,
               }}
               animate={{
                 y: '110vh',
+                x: [0, particle.swayAmount, -particle.swayAmount, 0],
                 rotate: particle.rotation + 720,
-                opacity: [1, 1, 0],
+                opacity: [1, 1, 1, 0],
               }}
               transition={{
                 duration: particle.duration,
                 delay: particle.delay,
                 ease: 'linear',
+                x: {
+                  duration: particle.duration / 2,
+                  repeat: 2,
+                  ease: 'easeInOut',
+                },
               }}
-              className="absolute"
+              className="absolute top-0"
               style={{
+                left: `${particle.x}%`,
                 width: particle.size,
                 height: particle.size,
                 backgroundColor: particle.color,
-                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                borderRadius: particle.id % 3 === 0 ? '50%' : particle.id % 3 === 1 ? '2px' : '0',
+                transform: particle.id % 2 === 0 ? 'rotate(45deg)' : undefined,
               }}
             />
           ))}
