@@ -13,6 +13,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 
 interface EffectOption {
   id: EffectType
@@ -44,14 +45,43 @@ const VISUAL_MODES: EffectOption[] = [
     label: 'Redacted Mode',
     description: 'Classified document with black bars',
   },
+  {
+    id: 'crt',
+    label: 'CRT Scanlines',
+    description: 'Retro monitor with scanlines and flicker',
+  },
+  {
+    id: 'neon',
+    label: 'Neon Glow',
+    description: 'Cyberpunk glowing edges and borders',
+  },
+  {
+    id: 'glitch',
+    label: 'Glitch/Static',
+    description: 'VHS tracking errors and chromatic aberration',
+  },
+  {
+    id: 'dvd',
+    label: 'DVD Logo',
+    description: 'Classic bouncing logo screensaver',
+  },
+  {
+    id: 'binary',
+    label: 'Binary Rain',
+    description: 'Subtle 0s and 1s in the margins',
+  },
+  {
+    id: 'aurora',
+    label: 'Aurora Waves',
+    description: 'Slow-moving northern lights gradients',
+  },
 ]
 
 export function SettingsPanel() {
   const {
-    effectsDisabled,
-    setEffectsDisabled,
     enabledEffects,
     toggleEffect,
+    disableAllEffects,
     settingsPanelOpen,
     setSettingsPanelOpen,
   } = useEffects()
@@ -59,25 +89,17 @@ export function SettingsPanel() {
   const { eventsEnabled, setEventsEnabled } = useEvents()
 
   const renderEffectToggle = (effect: EffectOption) => (
-    <div
-      key={effect.id}
-      className={`flex items-center justify-between ${
-        effectsDisabled ? 'opacity-50' : ''
-      }`}
-    >
+    <div key={effect.id} className="flex items-center justify-between">
       <div>
         <Label htmlFor={effect.id} className="text-base">
           {effect.label}
         </Label>
-        <p className="text-sm text-muted-foreground">
-          {effect.description}
-        </p>
+        <p className="text-sm text-muted-foreground">{effect.description}</p>
       </div>
       <Switch
         id={effect.id}
         checked={enabledEffects.has(effect.id)}
         onCheckedChange={() => toggleEffect(effect.id)}
-        disabled={effectsDisabled}
       />
     </div>
   )
@@ -98,55 +120,16 @@ export function SettingsPanel() {
 
       {/* Settings sheet */}
       <Sheet open={settingsPanelOpen} onOpenChange={setSettingsPanelOpen}>
-        <SheetContent side="right" className="w-80 z-[200]">
-          <SheetHeader>
-            <SheetTitle>Visual Effects</SheetTitle>
+        <SheetContent side="right" className="w-80 z-[200] flex flex-col">
+          <SheetHeader className="flex-shrink-0">
+            <SheetTitle>Settings</SheetTitle>
             <SheetDescription>
-              Toggle visual effects. Use Ctrl+Shift+E to open this panel.
+              Toggle effects. Use Ctrl+Shift+E to open this panel.
             </SheetDescription>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6">
-            {/* Master toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="disable-all" className="text-base font-medium">
-                  Disable All Effects
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Turn off all visual effects
-                </p>
-              </div>
-              <Switch
-                id="disable-all"
-                checked={effectsDisabled}
-                onCheckedChange={setEffectsDisabled}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Startup effects */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Startup
-              </h4>
-              {STARTUP_EFFECTS.map(renderEffectToggle)}
-            </div>
-
-            <Separator />
-
-            {/* Visual modes */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Visual Modes
-              </h4>
-              {VISUAL_MODES.map(renderEffectToggle)}
-            </div>
-
-            <Separator />
-
-            {/* Event animations */}
+          <div className="mt-6 space-y-6 flex-1 overflow-y-auto pr-2">
+            {/* Event Animations - separate section */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Event Animations
@@ -154,7 +137,7 @@ export function SettingsPanel() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="events" className="text-base">
-                    Event Animations
+                    Enable Events
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     Celebrate new #1, all-time highs, crashes
@@ -166,6 +149,39 @@ export function SettingsPanel() {
                   onCheckedChange={setEventsEnabled}
                 />
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Visual Effects header with disable button */}
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Visual Effects
+              </h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={disableAllEffects}
+                className="text-xs"
+              >
+                Disable All
+              </Button>
+            </div>
+
+            {/* Startup effects */}
+            <div className="space-y-4">
+              <h5 className="text-xs font-medium text-muted-foreground">
+                Startup
+              </h5>
+              {STARTUP_EFFECTS.map(renderEffectToggle)}
+            </div>
+
+            {/* Visual modes */}
+            <div className="space-y-4">
+              <h5 className="text-xs font-medium text-muted-foreground">
+                Visual Modes
+              </h5>
+              {VISUAL_MODES.map(renderEffectToggle)}
             </div>
 
             <Separator />

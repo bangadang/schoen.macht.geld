@@ -28,17 +28,17 @@
 | Status | Feature | Priority | Notes |
 |--------|---------|----------|-------|
 | [x] | Terminal Boot | ⭐ | Fake POST/boot sequence on load. Plays on every page load. |
-| [ ] | Matrix Mode | ⭐ | Green matrix symbols dropping from top with trace |
+| [x] | Matrix Mode | ⭐ | Green matrix symbols dropping from top with trace (via Hacker Mode) |
 | [ ] | Site Content Matrix | ⭐ | Letters from screen content used for matrix effect, spawned randomly (prefer top) |
-| [ ] | DVD Logo Mode | ⭐ | Configurable text/image bouncing off screen edges |
+| [x] | DVD Logo Mode | ⭐ | Configurable text/image bouncing off screen edges |
 | [ ] | Firework Mode | ⭐ | Solitaire-style card explosions |
-| [ ] | CRT Scanlines | ⭐ | Subtle horizontal lines + screen curvature |
-| [ ] | Glitch/Static | ⭐ | VHS tracking errors, chromatic aberration |
-| [ ] | Neon Glow | ⭐ | Cyberpunk-style glowing edges on elements |
+| [x] | CRT Scanlines | ⭐ | Subtle horizontal lines + screen curvature |
+| [x] | Glitch/Static | ⭐ | VHS tracking errors, chromatic aberration |
+| [x] | Neon Glow | ⭐ | Cyberpunk-style glowing edges on elements |
 | [ ] | Circuit Traces | ⭐ | Animated PCB traces flowing in background |
-| [ ] | Binary Rain | ⭐ | Subtle 0s and 1s floating in margins |
+| [x] | Binary Rain | ⭐ | Subtle 0s and 1s floating in margins |
 | [ ] | Pulse Border | ⭐ | Screen edge pulses on major events |
-| [ ] | Aurora Waves | ⭐ | Slow-moving color gradients in background |
+| [x] | Aurora Waves | ⭐ | Slow-moving color gradients in background |
 | [ ] | Hologram Flicker | ⭐ | Scan-line hologram effect on elements |
 
 ---
@@ -196,3 +196,40 @@
 - Fire overlay on stock image
 - Warning icons and dramatic text
 - 6 second duration
+
+### CRT Scanlines
+- Horizontal scanlines overlay (1px repeating)
+- Screen curvature vignette
+- Subtle RGB shift on edges
+- Constant subtle flicker animation
+
+### Neon Glow
+- Glowing text shadows on headings (pink)
+- Glowing box shadows on buttons (cyan)
+- Glowing borders on cards (pink)
+- Animated border glow cycling through colors
+- Tables have cyan glow
+
+### Glitch/Static
+- Random glitch lines appearing briefly
+- Static noise overlay (subtle)
+- Screen shake effect (periodic)
+- Chromatic aberration on text (periodic)
+
+### DVD Logo Mode
+- Bouncing "SMG" logo
+- Changes color on edge bounce
+- Neon glow effect on logo
+- ~60fps smooth animation
+
+### Binary Rain
+- Canvas-based 0s and 1s
+- Only in left/right margins (60px each)
+- Slower than matrix rain
+- Semi-transparent green
+
+### Aurora Waves
+- Three layered gradient waves
+- Blurred for soft effect
+- Slow undulating motion
+- Purple, cyan, green color palette

@@ -2,17 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
-export type EffectType = 'boot' | 'hacker' | 'drunk' | 'redacted'
+export type EffectType =
+  | 'boot'
+  | 'hacker'
+  | 'drunk'
+  | 'redacted'
+  | 'crt'
+  | 'neon'
+  | 'dvd'
+  | 'binary'
+  | 'aurora'
+  | 'glitch'
 
 interface EffectsContextType {
-  // Global disable
-  effectsDisabled: boolean
-  setEffectsDisabled: (disabled: boolean) => void
-
   // Individual effects
   enabledEffects: Set<EffectType>
   toggleEffect: (effect: EffectType) => void
   isEffectEnabled: (effect: EffectType) => boolean
+  disableAllEffects: () => void
 
   // Boot sequence
   bootComplete: boolean
@@ -31,12 +38,10 @@ const EffectsContext = createContext<EffectsContextType | null>(null)
 const STORAGE_KEY = 'smg-effects-settings'
 
 interface StoredSettings {
-  effectsDisabled: boolean
   enabledEffects: EffectType[]
 }
 
 export function EffectsProvider({ children }: { children: React.ReactNode }) {
-  const [effectsDisabled, setEffectsDisabled] = useState(false)
   const [enabledEffects, setEnabledEffects] = useState<Set<EffectType>>(new Set())
   const [bootComplete, setBootComplete] = useState(false)
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false)
@@ -48,7 +53,6 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const settings: StoredSettings = JSON.parse(stored)
-        setEffectsDisabled(settings.effectsDisabled)
         setEnabledEffects(new Set(settings.enabledEffects))
       }
     } catch {
@@ -62,14 +66,13 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return
     try {
       const settings: StoredSettings = {
-        effectsDisabled,
         enabledEffects: Array.from(enabledEffects),
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch {
       // Ignore localStorage errors
     }
-  }, [effectsDisabled, enabledEffects, hydrated])
+  }, [enabledEffects, hydrated])
 
   // Keyboard shortcut: Ctrl/Cmd + Shift + E
   useEffect(() => {
@@ -97,25 +100,26 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
 
   const isEffectEnabled = useCallback(
     (effect: EffectType) => {
-      if (effectsDisabled) return false
       return enabledEffects.has(effect)
     },
-    [effectsDisabled, enabledEffects]
+    [enabledEffects]
   )
+
+  const disableAllEffects = useCallback(() => {
+    setEnabledEffects(new Set())
+  }, [])
 
   const resetEffects = useCallback(() => {
     setEnabledEffects(new Set())
-    setEffectsDisabled(true)
   }, [])
 
   return (
     <EffectsContext.Provider
       value={{
-        effectsDisabled,
-        setEffectsDisabled,
         enabledEffects,
         toggleEffect,
         isEffectEnabled,
+        disableAllEffects,
         bootComplete,
         setBootComplete,
         settingsPanelOpen,
