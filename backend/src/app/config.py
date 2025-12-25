@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     screenshot_height: int = 1080
     screenshot_quality: int = 85  # JPEG quality (1-100)
     screenshot_views: list[str] = [
+        "ticker",
         "market-map",
         "terminal",
         "leaderboard",
