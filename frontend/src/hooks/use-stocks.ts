@@ -115,7 +115,7 @@ const RACE_COLORS = [
   '#8b5cf6', // violet
 ];
 
-export function useRaceData(count = 5, snapshotLimit = 20) {
+export function useRaceData(count = 5, snapshotLimit = 30) {
   const { stocks } = useStocks({ order: 'rank', limit: count });
 
   const { data, error, isLoading } = useSWR(

@@ -2,7 +2,7 @@
 
 import { Logo } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart2, CandlestickChart, LineChart, TrendingUp, Tv2 } from 'lucide-react';
+import { BarChart2, CandlestickChart, LineChart, TrendingUp, Trophy, Tv2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -30,6 +30,7 @@ export default function DisplayLayout({
     { id: 'terminal', label: 'Terminal', href: '/display/terminal', icon: Tv2 },
     { id: 'leaderboard', label: 'Rangliste', href: '/display/leaderboard', icon: TrendingUp },
     { id: 'stock-chart', label: 'Titel-Chart', href: '/display/stock-chart', icon: LineChart },
+    { id: 'performance-race', label: 'Rennen', href: '/display/performance-race', icon: Trophy },
   ];
 
   return (
