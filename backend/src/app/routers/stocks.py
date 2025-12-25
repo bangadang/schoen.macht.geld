@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Query, UploadFile
 from loguru import logger
 from sqlalchemy import func
+from sqlalchemy.orm import noload
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -14,7 +15,6 @@ from app.models.stock import (
     PriceEvent,
     Stock,
     StockSnapshot,
-    limit_price_events,
 )
 from app.schemas.stock import (
     PriceEventResponse,
@@ -40,7 +40,12 @@ async def list_stocks(
         created_at_desc, change_rank, change_rank_desc)
         limit: Maximum number of stocks to return
     """
-    sel = select(Stock)
+    # Query stocks without eager loading relationships
+    sel = select(Stock).options(
+        noload(Stock.price_events),
+        noload(Stock.snapshots),
+        noload(Stock.ai_tasks),
+    )
 
     # Apply ordering
     match order:
@@ -64,9 +69,57 @@ async def list_stocks(
     if limit:
         sel = sel.limit(limit)
     result = await session.exec(sel)
-    stocks = result.all()
+    stocks = list(result.all())
+
+    if not stocks:
+        return []
+
+    # Fetch only the latest price_event per stock (single query with window function)
+    tickers = [s.ticker for s in stocks]
+    events_subq = (
+        select(
+            PriceEvent,
+            func.row_number()
+            .over(
+                partition_by=PriceEvent.ticker,
+                order_by=col(PriceEvent.created_at).desc(),
+            )
+            .label("rn"),
+        )
+        .where(col(PriceEvent.ticker).in_(tickers))
+        .subquery()
+    )
+
+    events_query = select(
+        events_subq.c.id,
+        events_subq.c.ticker,
+        events_subq.c.price,
+        events_subq.c.change_type,
+        events_subq.c.created_at,
+    ).where(events_subq.c.rn == 1)
+
+    events_result = await session.exec(events_query)  # pyright: ignore[reportArgumentType]
+
+    # Map latest event by ticker
+    latest_event_by_ticker: dict[str, PriceEvent] = {}
+    for row in events_result.all():
+        latest_event_by_ticker[row.ticker] = PriceEvent(
+            id=row.id,
+            ticker=row.ticker,
+            price=row.price,
+            change_type=row.change_type,
+            created_at=row.created_at,
+        )
+
+    # Attach latest event to stocks
+    responses = []
+    for stock in stocks:
+        event = latest_event_by_ticker.get(stock.ticker)
+        stock.price_events = [event] if event else []
+        responses.append(StockResponse.model_validate(stock))
+
     logger.debug("Listed {} stocks (order={})", len(stocks), order)
-    return [StockResponse.model_validate(limit_price_events(s)) for s in stocks]
+    return responses
 
 
 @router.post("/")

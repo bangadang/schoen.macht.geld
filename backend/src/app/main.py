@@ -13,6 +13,7 @@ from app.admin import setup_admin
 from app.config import settings
 from app.database import async_session_maker, engine, init_db
 from app.logger import init_logging
+from app.middleware import TimingMiddleware
 from app.routers import ai, stocks, swipe
 from app.scheduler import (
     AI_IMAGE_DIR,
@@ -75,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Timing middleware for performance monitoring
+app.add_middleware(TimingMiddleware)
 
 app.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
 app.include_router(swipe.router, prefix="/swipe", tags=["swipe"])

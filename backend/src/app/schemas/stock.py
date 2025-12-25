@@ -79,21 +79,21 @@ class StockResponse(BaseModel):
     @computed_field
     @property
     def initial_price(self) -> float:
-        """Get initial price from first entry."""
-        if self.price_events:
-            return self.price_events[-1].price
+        """Get reference price (from last snapshot) as base for change calculation."""
+        if self.reference_price is not None:
+            return self.reference_price
         return settings.stock_base_price
 
     @computed_field
     @property
     def change(self) -> float:
-        """Absolute change from initial price."""
+        """Absolute change from reference price."""
         return self.price - self.initial_price
 
     @computed_field
     @property
     def percent_change(self) -> float:
-        """Percentage change from initial price (total lifetime change)."""
+        """Percentage change from reference price."""
         if self.initial_price == 0:
             return 0.0
         return (self.change / self.initial_price) * 100

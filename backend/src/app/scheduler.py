@@ -1,6 +1,10 @@
 import random
+import time
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from functools import wraps
 from pathlib import Path
+from typing import ParamSpec, TypeVar
 
 from apscheduler.schedulers.asyncio import (  # pyright: ignore[reportMissingTypeStubs]
     AsyncIOScheduler,
@@ -11,18 +15,57 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
-from app.database import async_session_maker
+from app.database import async_session_maker, get_query_stats, reset_query_stats
 from app.models.ai_task import AITask, TaskStatus, TaskType
 from app.models.stock import ChangeType, PriceEvent, Stock, StockSnapshot
 from app.services.ai import AIError, ai
 
 scheduler = AsyncIOScheduler()
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def timed_task(
+    func: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R]]:
+    """Decorator to log timing and query stats for scheduler tasks."""
+
+    @wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        reset_query_stats()
+        start = time.perf_counter()
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            duration_ms = (time.perf_counter() - start) * 1000
+            queries, db_time = get_query_stats()
+            db_time_ms = db_time * 1000
+            if duration_ms > 100 or queries > 10:
+                logger.warning(
+                    "[{}] {:.1f}ms total, {:.1f}ms DB, {} queries",
+                    func.__name__,
+                    duration_ms,
+                    db_time_ms,
+                    queries,
+                )
+            else:
+                logger.debug(
+                    "[{}] {:.1f}ms total, {:.1f}ms DB, {} queries",
+                    func.__name__,
+                    duration_ms,
+                    db_time_ms,
+                    queries,
+                )
+
+    return wrapper
+
 
 AI_IMAGE_DIR = "ai_images"
 AI_VIDEO_DIR = "ai_videos"
 
 
+@timed_task
 async def tick_prices() -> None:
     """Apply random price changes to all active stocks."""
     async with async_session_maker() as session:
@@ -55,6 +98,7 @@ async def tick_prices() -> None:
         logger.debug("Ticked prices for {} stocks", len(stocks))
 
 
+@timed_task
 async def snapshot_prices() -> None:
     """Take price snapshots for all active stocks.
 
@@ -166,6 +210,7 @@ async def _cleanup_old_snapshots(session: AsyncSession) -> None:
         )
 
 
+@timed_task
 async def process_ai_tasks() -> None:
     """Process pending and in-progress AI tasks."""
     async with async_session_maker() as session:

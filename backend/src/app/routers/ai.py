@@ -4,13 +4,15 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
+from sqlalchemy import func
+from sqlalchemy.orm import noload
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
 from app.database import get_session
 from app.models.ai_task import AITask, ImageType, TaskStatus, TaskType
-from app.models.stock import Stock
+from app.models.stock import PriceEvent, Stock, StockSnapshot
 from app.schemas.ai import (
     AITaskCreateResponse,
     AITaskResponse,
@@ -238,23 +240,59 @@ async def generate_headlines(
     # Clamp count to valid range
     count = max(1, min(10, count))
 
-    # Get top volatile stocks (sorted by absolute percent change)
-    query = select(Stock).limit(count)
+    # Get stocks without eager loading relationships
+    # Filter for stocks with reference_price (needed for percentage_change)
+    query = (
+        select(Stock)
+        .options(
+            noload(Stock.price_events),
+            noload(Stock.snapshots),
+            noload(Stock.ai_tasks),
+        )
+        .where(Stock.reference_price.is_not(None))  # pyright: ignore[reportAttributeAccessIssue]
+        .limit(count * 2)  # Get extra to sort by volatility
+    )
     result = await session.exec(query)
-    stocks = sorted(
-        result.all(),
-        key=lambda s: abs(s.percentage_change),  # pyright: ignore[reportArgumentType]
-        reverse=True,
-    )[:count]
+    stocks = list(result.all())
 
     if not stocks:
         return HeadlinesResponse(headlines=[], stocks_used=[])
 
-    # Build stocks data string for prompt
+    # Fetch latest price per stock in a single query
+    tickers = [s.ticker for s in stocks]
+    events_subq = (
+        select(
+            PriceEvent.ticker,
+            PriceEvent.price,
+            func.row_number()
+            .over(
+                partition_by=PriceEvent.ticker,
+                order_by=col(PriceEvent.created_at).desc(),
+            )
+            .label("rn"),
+        )
+        .where(col(PriceEvent.ticker).in_(tickers))
+        .subquery()
+    )
+    events_query = select(
+        events_subq.c.ticker,
+        events_subq.c.price,
+    ).where(events_subq.c.rn == 1)
+    events_result = await session.exec(events_query)  # pyright: ignore[reportArgumentType]
+    price_by_ticker = {row.ticker: row.price for row in events_result.all()}
+
+    # Sort by absolute percentage change and take top N
+    stocks = sorted(
+        stocks,
+        key=lambda s: abs(s.percentage_change or 0),
+        reverse=True,
+    )[:count]
+
+    # Build stocks data string for prompt (use fetched prices)
     stocks_data = "\n".join(
         f"- Börsenkürzel: {s.ticker}, Spitzname: {s.title}, "
-        + f"Aktueller Wert: {s.price:.2f} CHF, "
-        + f"Veränderung: {s.change:.2f} CHF ({s.percentage_change:.2f}%)"
+        + f"Aktueller Wert: {price_by_ticker.get(s.ticker, s.reference_price or 0):.2f} CHF, "
+        + f"Veränderung: {(price_by_ticker.get(s.ticker, 0) - (s.reference_price or 0)):.2f} CHF ({s.percentage_change:.2f}%)"
         for s in stocks
     )
 
