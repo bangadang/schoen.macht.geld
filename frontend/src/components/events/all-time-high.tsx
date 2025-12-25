@@ -2,30 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { TrendingUp } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
+import { StockImage, COLORS } from '@/components/display';
+import { TIMINGS } from '@/constants/timings';
+import { EVENT_MESSAGES } from '@/constants/messages';
 
 interface AllTimeHighProps {
   event: StockEvent;
   onComplete: () => void;
 }
 
-const ANIMATION_DURATION = 6000;
-
 export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
   const [phase, setPhase] = useState<'alert' | 'reveal' | 'display' | 'exit'>('alert');
   const stock = event.stock;
+  const duration = TIMINGS.eventAllTimeHigh;
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase('reveal'), 800),
       setTimeout(() => setPhase('display'), 2000),
-      setTimeout(() => setPhase('exit'), ANIMATION_DURATION - 800),
-      setTimeout(onComplete, ANIMATION_DURATION),
+      setTimeout(() => setPhase('exit'), duration - 800),
+      setTimeout(onComplete, duration),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+  }, [onComplete, duration]);
 
   // Generate rising arrow indicators
   const arrows = Array.from({ length: 20 }).map((_, i) => ({
@@ -80,7 +81,7 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
             >
               ▲▲▲
             </motion.div>
-            <span className="text-3xl font-bold text-white tracking-widest">ALLZEITHOCH</span>
+            <span className="text-3xl font-bold text-white tracking-widest">{EVENT_MESSAGES.allTimeHigh.title}</span>
             <motion.div
               animate={{ opacity: [1, 0.3, 1] }}
               transition={{ duration: 0.3, repeat: Infinity }}
@@ -99,7 +100,7 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
             transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
             className="py-1 text-green-400 font-bold whitespace-nowrap"
           >
-            {'█ NEUES ALLZEITHOCH █ '.repeat(10)} {stock.ticker} █ {stock.price.toFixed(2)} CHF █
+            {`${EVENT_MESSAGES.allTimeHigh.tickerPrefix} `.repeat(10)} {stock.ticker} █ {stock.price.toFixed(2)} CHF █
           </motion.div>
         </div>
 
@@ -119,11 +120,12 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
               initial={{ scale: 0, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.5, type: 'spring' }}
-              className="inline-flex items-center gap-3 border-4 border-green-500 bg-black px-6 py-3 mb-8"
+              className="inline-flex items-center gap-3 border-4 bg-black px-6 py-3 mb-8"
+              style={{ borderColor: COLORS.positive }}
             >
-              <TrendingUp className="w-10 h-10 text-green-500" />
-              <span className="text-4xl font-bold text-green-500 led-glow">ATH</span>
-              <TrendingUp className="w-10 h-10 text-green-500" />
+              <TrendingUp className="w-10 h-10" style={{ color: COLORS.positive }} />
+              <span className="text-4xl font-bold led-glow" style={{ color: COLORS.positive }}>{EVENT_MESSAGES.allTimeHigh.badge}</span>
+              <TrendingUp className="w-10 h-10" style={{ color: COLORS.positive }} />
             </motion.div>
 
             {/* Stock display - terminal style */}
@@ -137,24 +139,19 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
                 {/* Stock image */}
                 <motion.div
                   animate={{
-                    boxShadow: ['0 0 10px #22c55e', '0 0 30px #22c55e', '0 0 10px #22c55e']
+                    boxShadow: [`0 0 10px ${COLORS.positive}`, `0 0 30px ${COLORS.positive}`, `0 0 10px ${COLORS.positive}`]
                   }}
                   transition={{ duration: 1, repeat: Infinity }}
-                  className="relative w-28 h-28 border-2 border-green-500 overflow-hidden flex-shrink-0"
+                  className="flex-shrink-0"
                 >
-                  {stock.image ? (
-                    <Image
-                      unoptimized
-                      src={stock.image}
-                      alt={stock.title}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-green-900/50 flex items-center justify-center text-2xl font-bold text-green-500">
-                      {stock.ticker.slice(0, 2)}
-                    </div>
-                  )}
+                  <StockImage
+                    src={stock.image}
+                    alt={stock.title}
+                    ticker={stock.ticker}
+                    size="lg"
+                    borderColor={COLORS.positive}
+                    fallbackBg="bg-green-900/50"
+                  />
                 </motion.div>
 
                 {/* Stock info */}
@@ -180,12 +177,13 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
               {/* Price display */}
               <div className="border-t border-green-500/50 mt-4 pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">NEUER REKORD:</span>
+                  <span className="text-muted-foreground">{EVENT_MESSAGES.allTimeHigh.newRecord}:</span>
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 1.2, type: 'spring' }}
-                    className="text-4xl font-bold text-green-500 led-glow"
+                    className="text-4xl font-bold led-glow"
+                    style={{ color: COLORS.positive }}
                   >
                     {stock.price.toFixed(2)} CHF
                   </motion.span>
@@ -194,7 +192,7 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
                 {/* Previous high comparison */}
                 {event.metadata?.previousPrice && (
                   <div className="flex items-center justify-between mt-2 text-sm">
-                    <span className="text-muted-foreground">VORHERIGES HOCH:</span>
+                    <span className="text-muted-foreground">{EVENT_MESSAGES.allTimeHigh.previousHigh}:</span>
                     <span className="text-muted-foreground line-through">
                       {event.metadata.previousPrice.toFixed(2)} CHF
                     </span>
@@ -203,8 +201,8 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
 
                 {/* Change */}
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-muted-foreground">VERÄNDERUNG:</span>
-                  <span className="text-xl font-bold text-green-500">
+                  <span className="text-muted-foreground">{EVENT_MESSAGES.allTimeHigh.change}:</span>
+                  <span className="text-xl font-bold" style={{ color: COLORS.positive }}>
                     ▲ +{stock.percent_change.toFixed(2)}%
                   </span>
                 </div>
@@ -218,7 +216,7 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
               transition={{ delay: 3 }}
               className="mt-6 text-sm text-muted-foreground"
             >
-              ─── TIPPEN ZUM SCHLIESSEN ───
+              {EVENT_MESSAGES.tapToDismiss}
             </motion.p>
           </motion.div>
         </div>
@@ -226,8 +224,8 @@ export function AllTimeHigh({ event, onComplete }: AllTimeHighProps) {
         {/* Bottom status bar */}
         <div className="bg-green-900/50 border-t border-green-700 py-2 px-4">
           <div className="flex items-center justify-between text-sm text-green-400">
-            <span>┌─ SMG BÖRSE ─┐</span>
-            <span>LIVE │ ALLZEITHOCH ERREICHT</span>
+            <span>┌─ {EVENT_MESSAGES.allTimeHigh.exchange} ─┐</span>
+            <span>{EVENT_MESSAGES.allTimeHigh.live}</span>
             <span>┌─ {new Date().toLocaleTimeString('de-DE')} ─┐</span>
           </div>
         </div>

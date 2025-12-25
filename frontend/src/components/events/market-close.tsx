@@ -4,29 +4,30 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
+import { TIMINGS } from '@/constants/timings';
+import { EVENT_MESSAGES } from '@/constants/messages';
 
 interface MarketCloseProps {
   event: StockEvent;
   onComplete: () => void;
 }
 
-const ANIMATION_DURATION = 5000; // 5 seconds
-
 export function MarketClose({ event, onComplete }: MarketCloseProps) {
   const [phase, setPhase] = useState<'flash' | 'moon' | 'text' | 'exit'>('flash');
   const marketDay = event.metadata?.marketDay ?? 1;
   const leader = event.stock;
+  const duration = TIMINGS.eventMarketClose;
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase('moon'), 300),
       setTimeout(() => setPhase('text'), 1500),
-      setTimeout(() => setPhase('exit'), ANIMATION_DURATION - 800),
-      setTimeout(onComplete, ANIMATION_DURATION),
+      setTimeout(() => setPhase('exit'), duration - 800),
+      setTimeout(onComplete, duration),
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+  }, [onComplete, duration]);
 
   return (
     <AnimatePresence>
@@ -123,7 +124,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
               className="text-5xl font-bold text-indigo-300 tracking-wider"
               style={{ textShadow: '0 0 30px rgba(99, 102, 241, 0.6)' }}
             >
-              MARKT GESCHLOSSEN
+              {EVENT_MESSAGES.market.closed}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -131,7 +132,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
               transition={{ delay: 0.8 }}
               className="mt-4 text-xl text-indigo-200/80"
             >
-              Handelstag {marketDay} beendet
+              {EVENT_MESSAGES.market.tradingDay} {marketDay} {EVENT_MESSAGES.market.dayEnded}
             </motion.p>
             {leader && (
               <motion.p
@@ -140,7 +141,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
                 transition={{ delay: 1.2 }}
                 className="mt-2 text-lg text-indigo-200/60"
               >
-                Tagessieger: {leader.name}
+                {EVENT_MESSAGES.market.dayWinner}: {leader.name}
               </motion.p>
             )}
           </motion.div>
@@ -153,7 +154,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
           transition={{ delay: 2.5 }}
           className="absolute bottom-12 text-sm text-gray-500"
         >
-          Tippen zum Schliessen
+          {EVENT_MESSAGES.tapToDismissSimple}
         </motion.p>
       </motion.div>
     </AnimatePresence>

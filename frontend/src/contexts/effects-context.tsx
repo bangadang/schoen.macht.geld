@@ -19,6 +19,15 @@ export type EffectType =
   | 'noise'
   | 'interlace'
 
+export type AnalyzerStatus = 'idle' | 'requesting' | 'listening' | 'synced' | 'error'
+
+export interface BeatState {
+  bpm: number
+  status: AnalyzerStatus
+  confidence: number
+  errorMessage?: string
+}
+
 interface EffectsContextType {
   // Individual effects
   enabledEffects: Set<EffectType>
@@ -44,6 +53,24 @@ interface EffectsContextType {
   setStockMarqueeEnabled: (enabled: boolean) => void
   headlinesMarqueeEnabled: boolean
   setHeadlinesMarqueeEnabled: (enabled: boolean) => void
+
+  // Marquee position
+  stockMarqueePosition: 'top' | 'bottom'
+  setStockMarqueePosition: (position: 'top' | 'bottom') => void
+  headlinesMarqueePosition: 'top' | 'bottom'
+  setHeadlinesMarqueePosition: (position: 'top' | 'bottom') => void
+
+  // Marquee scroll speed (multiplier: 1 = normal, 2 = 2x faster, 0.5 = 2x slower)
+  marqueeScrollSpeed: number
+  setMarqueeScrollSpeed: (speed: number) => void
+
+  // Kiosk mode (larger text/elements for overhead displays)
+  kioskMode: boolean
+  setKioskMode: (enabled: boolean) => void
+
+  // Beat sync state
+  beatState: BeatState
+  setBeatState: (state: BeatState) => void
 
   // Reset on error
   resetEffects: () => void
@@ -78,6 +105,10 @@ interface StoredSettings {
   effectIntensities?: Partial<Record<EffectType, number>>
   stockMarqueeEnabled?: boolean
   headlinesMarqueeEnabled?: boolean
+  stockMarqueePosition?: 'top' | 'bottom'
+  headlinesMarqueePosition?: 'top' | 'bottom'
+  marqueeScrollSpeed?: number
+  kioskMode?: boolean
 }
 
 export function EffectsProvider({ children }: { children: React.ReactNode }) {
@@ -87,6 +118,15 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false)
   const [stockMarqueeEnabled, setStockMarqueeEnabled] = useState(false)
   const [headlinesMarqueeEnabled, setHeadlinesMarqueeEnabled] = useState(false)
+  const [stockMarqueePosition, setStockMarqueePosition] = useState<'top' | 'bottom'>('top')
+  const [headlinesMarqueePosition, setHeadlinesMarqueePosition] = useState<'top' | 'bottom'>('bottom')
+  const [marqueeScrollSpeed, setMarqueeScrollSpeed] = useState(1)
+  const [kioskMode, setKioskMode] = useState(false)
+  const [beatState, setBeatState] = useState<BeatState>({
+    bpm: 0,
+    status: 'idle',
+    confidence: 0,
+  })
   const [hydrated, setHydrated] = useState(false)
 
   // Load settings from localStorage on mount
@@ -105,6 +145,18 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
         if (settings.headlinesMarqueeEnabled !== undefined) {
           setHeadlinesMarqueeEnabled(settings.headlinesMarqueeEnabled)
         }
+        if (settings.stockMarqueePosition !== undefined) {
+          setStockMarqueePosition(settings.stockMarqueePosition)
+        }
+        if (settings.headlinesMarqueePosition !== undefined) {
+          setHeadlinesMarqueePosition(settings.headlinesMarqueePosition)
+        }
+        if (settings.marqueeScrollSpeed !== undefined) {
+          setMarqueeScrollSpeed(settings.marqueeScrollSpeed)
+        }
+        if (settings.kioskMode !== undefined) {
+          setKioskMode(settings.kioskMode)
+        }
       }
     } catch {
       // Ignore localStorage errors
@@ -121,12 +173,16 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
         effectIntensities,
         stockMarqueeEnabled,
         headlinesMarqueeEnabled,
+        stockMarqueePosition,
+        headlinesMarqueePosition,
+        marqueeScrollSpeed,
+        kioskMode,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch {
       // Ignore localStorage errors
     }
-  }, [enabledEffects, effectIntensities, stockMarqueeEnabled, headlinesMarqueeEnabled, hydrated])
+  }, [enabledEffects, effectIntensities, stockMarqueeEnabled, headlinesMarqueeEnabled, stockMarqueePosition, headlinesMarqueePosition, marqueeScrollSpeed, kioskMode, hydrated])
 
   // Keyboard shortcut: Ctrl/Cmd + Shift + E
   useEffect(() => {
@@ -200,6 +256,16 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
         setStockMarqueeEnabled,
         headlinesMarqueeEnabled,
         setHeadlinesMarqueeEnabled,
+        stockMarqueePosition,
+        setStockMarqueePosition,
+        headlinesMarqueePosition,
+        setHeadlinesMarqueePosition,
+        marqueeScrollSpeed,
+        setMarqueeScrollSpeed,
+        kioskMode,
+        setKioskMode,
+        beatState,
+        setBeatState,
         resetEffects,
       }}
     >

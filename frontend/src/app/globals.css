@@ -263,3 +263,218 @@
   color: hsl(var(--primary-foreground));
   border-color: hsl(var(--primary-foreground) / 0.3);
 }
+
+/* Make table header text darker and more readable on orange background */
+thead th .text-muted-foreground,
+th .text-muted-foreground {
+  color: hsl(var(--primary-foreground)) !important;
+  opacity: 0.95;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KIOSK MODE - Larger text and elements for overhead displays
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.kiosk-mode {
+  /* Scale all base font sizes */
+  font-size: 1.5rem;
+}
+
+.kiosk-mode header {
+  padding: 1.5rem 2rem;
+}
+
+.kiosk-mode header .text-xl {
+  font-size: 2.5rem;
+}
+
+.kiosk-mode header .text-base {
+  font-size: 1.75rem;
+}
+
+.kiosk-mode header .h-8 {
+  height: 3rem;
+  width: 3rem;
+}
+
+/* View title bar */
+.kiosk-mode .text-xl {
+  font-size: 2rem;
+}
+
+/* Marquees */
+.kiosk-mode .h-8 {
+  height: 3.5rem;
+}
+
+.kiosk-mode .text-sm {
+  font-size: 1.25rem;
+}
+
+/* Status bar and footer */
+.kiosk-mode footer {
+  padding: 1rem 2rem;
+}
+
+/* F-key legend */
+.kiosk-mode .text-sm {
+  font-size: 1.125rem;
+}
+
+/* Main content scaling */
+.kiosk-mode main {
+  font-size: 1.25rem;
+}
+
+/* Tables */
+.kiosk-mode table {
+  font-size: 1.25rem;
+}
+
+.kiosk-mode th,
+.kiosk-mode td {
+  padding: 1rem 1.5rem;
+}
+
+.kiosk-mode th {
+  font-size: 1.5rem;
+  height: auto;
+  min-height: 3rem;
+}
+
+.kiosk-mode thead {
+  font-size: 1.5rem;
+}
+
+/* Buttons and interactive elements */
+.kiosk-mode button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+}
+
+/* Terminal and code-like displays */
+.kiosk-mode .font-mono {
+  font-size: 1.25rem;
+}
+
+/* Leaderboard ranks */
+.kiosk-mode .text-lg {
+  font-size: 2rem;
+}
+
+.kiosk-mode .text-2xl {
+  font-size: 3rem;
+}
+
+.kiosk-mode .text-3xl {
+  font-size: 4rem;
+}
+
+.kiosk-mode .text-4xl {
+  font-size: 5rem;
+}
+
+.kiosk-mode .text-5xl {
+  font-size: 6rem;
+}
+
+/* Stock prices and data */
+.kiosk-mode .tabular-nums {
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+/* Badges and labels */
+.kiosk-mode .text-xs {
+  font-size: 1rem;
+}
+
+/* Increase spacing */
+.kiosk-mode .gap-1 {
+  gap: 0.5rem;
+}
+
+.kiosk-mode .gap-2 {
+  gap: 0.75rem;
+}
+
+.kiosk-mode .gap-3 {
+  gap: 1rem;
+}
+
+.kiosk-mode .gap-4 {
+  gap: 1.5rem;
+}
+
+/* Chart elements */
+.kiosk-mode svg text {
+  font-size: 1.25rem;
+}
+
+/* Border thickness */
+.kiosk-mode .border,
+.kiosk-mode .border-t,
+.kiosk-mode .border-b,
+.kiosk-mode .border-l,
+.kiosk-mode .border-r {
+  border-width: 2px;
+}
+
+/* Panel padding */
+.kiosk-mode .p-2 {
+  padding: 1rem;
+}
+
+.kiosk-mode .p-3 {
+  padding: 1.25rem;
+}
+
+.kiosk-mode .p-4 {
+  padding: 1.5rem;
+}
+
+.kiosk-mode .px-4 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.kiosk-mode .py-2 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Marquee text scaling - make text 2x larger */
+.h-8.flex.items-center {
+  font-size: 2rem;
+  height: 4rem;
+}
+
+.h-8.flex.items-center .text-sm {
+  font-size: 1.5rem;
+}
+
+.h-8.flex.items-center .text-xs {
+  font-size: 1.25rem;
+}
+
+/* Market map foreignObject content scaling */
+.kiosk-mode foreignObject {
+  /* Ensure foreignObject content inherits kiosk mode styling */
+  font-size: inherit;
+}
+
+.kiosk-mode foreignObject .text-xs {
+  font-size: 1.25rem !important;
+}
+
+.kiosk-mode foreignObject .text-sm {
+  font-size: 1.5rem !important;
+}
+
+.kiosk-mode foreignObject .text-base {
+  font-size: 1.75rem !important;
+}
+
+.kiosk-mode foreignObject .text-lg {
+  font-size: 2.25rem !important;
+}

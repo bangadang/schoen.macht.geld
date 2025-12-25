@@ -2,33 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { Crown } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
+import { StockImage, COLORS } from '@/components/display';
+import { TIMINGS } from '@/constants/timings';
+import { EVENT_MESSAGES } from '@/constants/messages';
 
 interface NewLeaderCelebrationProps {
   event: StockEvent;
   onComplete: () => void;
 }
 
-const ANIMATION_DURATION = 8000;
-
 export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebrationProps) {
   const [phase, setPhase] = useState<'intro' | 'reveal' | 'ticker' | 'exit'>('intro');
   const stock = event.stock;
+  const duration = TIMINGS.eventNewLeader;
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase('reveal'), 1000),
       setTimeout(() => setPhase('ticker'), 2500),
-      setTimeout(() => setPhase('exit'), ANIMATION_DURATION - 1000),
-      setTimeout(onComplete, ANIMATION_DURATION),
+      setTimeout(() => setPhase('exit'), duration - 1000),
+      setTimeout(onComplete, duration),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+  }, [onComplete, duration]);
 
   // Ticker tape characters
-  const tickerText = `████ NEUER #1 ████ ${stock.ticker} ████ ${stock.price.toFixed(2)} CHF ████ NEUER SPITZENREITER ████ `;
+  const tickerText = `${EVENT_MESSAGES.newLeader.tickerPrefix} ${stock.ticker} ████ ${stock.price.toFixed(2)} CHF ${EVENT_MESSAGES.newLeader.tickerSuffix} `;
 
   return (
     <AnimatePresence>
@@ -71,7 +72,7 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
             >
               ▌▌▌
             </motion.span>
-            <span className="text-3xl font-bold tracking-widest">BREAKING NEWS</span>
+            <span className="text-3xl font-bold tracking-widest">{EVENT_MESSAGES.newLeader.breakingNews}</span>
             <motion.span
               animate={{ opacity: [1, 0.3, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
@@ -102,11 +103,11 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
             >
               <motion.div
                 animate={{
-                  textShadow: ['0 0 20px #ff9900', '0 0 60px #ff9900', '0 0 20px #ff9900']
+                  textShadow: [`0 0 20px ${COLORS.primary}`, `0 0 60px ${COLORS.primary}`, `0 0 20px ${COLORS.primary}`]
                 }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                <Crown className="w-20 h-20 text-accent" style={{ filter: 'drop-shadow(0 0 10px #ffcc00)' }} />
+                <Crown className="w-20 h-20 text-accent" style={{ filter: `drop-shadow(0 0 10px ${COLORS.secondary})` }} />
               </motion.div>
             </motion.div>
 
@@ -132,24 +133,19 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
               {/* Stock image */}
               <motion.div
                 animate={{
-                  boxShadow: ['0 0 10px #ff9900', '0 0 30px #ff9900', '0 0 10px #ff9900']
+                  boxShadow: [`0 0 10px ${COLORS.primary}`, `0 0 30px ${COLORS.primary}`, `0 0 10px ${COLORS.primary}`]
                 }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="relative w-32 h-32 mx-auto border-2 border-accent overflow-hidden mb-4"
+                className="mx-auto mb-4"
               >
-                {stock.image ? (
-                  <Image
-                    unoptimized
-                    src={stock.image}
-                    alt={stock.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary">
-                    {stock.ticker.slice(0, 2)}
-                  </div>
-                )}
+                <StockImage
+                  src={stock.image}
+                  alt={stock.title}
+                  ticker={stock.ticker}
+                  size="xl"
+                  borderColor={COLORS.secondary}
+                  className="border-accent"
+                />
               </motion.div>
 
               {/* Stock info */}
@@ -162,11 +158,15 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 1.3, type: 'spring' }}
-                  className="text-4xl font-bold text-green-500 led-glow"
+                  className="text-4xl font-bold led-glow"
+                  style={{ color: COLORS.positive }}
                 >
                   {stock.price.toFixed(2)} <span className="text-2xl text-muted-foreground">CHF</span>
                 </motion.div>
-                <div className={`text-xl font-bold mt-2 ${stock.percent_change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div
+                  className="text-xl font-bold mt-2"
+                  style={{ color: stock.percent_change >= 0 ? COLORS.positive : COLORS.negative }}
+                >
                   {stock.percent_change >= 0 ? '▲' : '▼'} {stock.percent_change >= 0 ? '+' : ''}{stock.percent_change.toFixed(2)}%
                 </div>
               </div>
@@ -174,7 +174,7 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
               {/* Previous leader */}
               {event.metadata?.previousLeader && (
                 <div className="text-sm text-muted-foreground">
-                  <span className="text-red-500">▼</span> ÜBERHOLT: {event.metadata.previousLeader.ticker}
+                  <span style={{ color: COLORS.negative }}>▼</span> {EVENT_MESSAGES.newLeader.overtaken}: {event.metadata.previousLeader.ticker}
                 </div>
               )}
             </motion.div>
@@ -186,7 +186,7 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
               transition={{ delay: 3 }}
               className="mt-6 text-sm text-muted-foreground"
             >
-              ─── TIPPEN ZUM SCHLIESSEN ───
+              {EVENT_MESSAGES.tapToDismiss}
             </motion.p>
           </motion.div>
         </div>

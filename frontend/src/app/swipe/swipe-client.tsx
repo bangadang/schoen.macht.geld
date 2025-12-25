@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, X, Loader2 } from 'lucide-react';
 import { useStocks, submitSwipe } from '@/hooks/use-stocks';
 import type { SwipeDirection, StockResponse } from '@/lib/api/client';
+import { StockImage, COLORS } from '@/components/display';
+import { UI_MESSAGES } from '@/constants/messages';
 
 // Minimum stocks remaining before fetching more
 const LOW_STOCK_THRESHOLD = 3;
@@ -141,8 +142,8 @@ export default function SwipeClient() {
     return (
       <div className="text-center flex flex-col items-center gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <h2 className="text-2xl font-bold text-primary">LADE MARKT...</h2>
-        <p className="text-muted-foreground">PROFILE WERDEN VORBEREITET</p>
+        <h2 className="text-2xl font-bold text-primary">{UI_MESSAGES.loadingMarket}</h2>
+        <p className="text-muted-foreground">{UI_MESSAGES.preparingProfiles}</p>
       </div>
     );
   }
@@ -150,15 +151,14 @@ export default function SwipeClient() {
   if (!currentStock) {
     return (
       <div className="text-center border-2 border-primary p-8 bg-black">
-        <h2 className="text-2xl font-bold text-primary">KEINE AKTIEN VERFÜGBAR</h2>
+        <h2 className="text-2xl font-bold text-primary">{UI_MESSAGES.noStocksAvailable}</h2>
         <p className="text-muted-foreground mt-2">
-          ADMIN-SEITE AUFRUFEN UM ERSTE AKTIE ZU ERSTELLEN
+          {UI_MESSAGES.createFirstStock}
         </p>
       </div>
     );
   }
 
-  const imageUrl = currentStock.image || '/placeholder.png';
   const isPositive = currentStock.percent_change >= 0;
 
   return (
@@ -166,7 +166,7 @@ export default function SwipeClient() {
       {/* Header info bar */}
       <div className="absolute top-16 left-0 right-0 z-10 px-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground border border-border bg-black/80 px-3 py-1">
-          <span>┌─ STOCK SWIPE ─┐</span>
+          <span>┌─ {UI_MESSAGES.stockSwipe} ─┐</span>
           <span>#{currentIndex + 1} / {stockQueue.length}</span>
         </div>
       </div>
@@ -207,16 +207,16 @@ export default function SwipeClient() {
             {/* Swipe indicators */}
             <>
               <motion.div
-                style={{ opacity: likeOpacity }}
-                className="absolute top-6 left-6 rotate-[-15deg] border-4 border-green-500 text-green-500 text-4xl font-bold px-4 py-2 bg-black/80"
+                style={{ opacity: likeOpacity, borderColor: COLORS.positive, color: COLORS.positive }}
+                className="absolute top-6 left-6 rotate-[-15deg] border-4 text-4xl font-bold px-4 py-2 bg-black/80"
               >
-                ▲ BUY
+                ▲ {UI_MESSAGES.buy}
               </motion.div>
               <motion.div
-                style={{ opacity: nopeOpacity }}
-                className="absolute top-6 right-6 rotate-[15deg] border-4 border-red-500 text-red-500 text-4xl font-bold px-4 py-2 bg-black/80"
+                style={{ opacity: nopeOpacity, borderColor: COLORS.negative, color: COLORS.negative }}
+                className="absolute top-6 right-6 rotate-[15deg] border-4 text-4xl font-bold px-4 py-2 bg-black/80"
               >
-                ▼ SELL
+                ▼ {UI_MESSAGES.sell}
               </motion.div>
             </>
 
@@ -225,7 +225,7 @@ export default function SwipeClient() {
               {/* Ticker header */}
               <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between">
                 <span className="text-2xl font-bold">{currentStock.ticker}</span>
-                <span className={`text-xl font-bold ${isPositive ? 'text-green-900' : 'text-red-900'}`}>
+                <span className="text-xl font-bold" style={{ color: isPositive ? '#166534' : '#991b1b' }}>
                   {isPositive ? '▲' : '▼'} {currentStock.percent_change >= 0 ? '+' : ''}{currentStock.percent_change.toFixed(1)}%
                 </span>
               </div>
@@ -236,7 +236,10 @@ export default function SwipeClient() {
 
                 {/* Price display */}
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className={`text-3xl font-bold led-glow ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  <span
+                    className="text-3xl font-bold led-glow"
+                    style={{ color: isPositive ? COLORS.positive : COLORS.negative }}
+                  >
                     {currentStock.price.toFixed(2)}
                   </span>
                   <span className="text-lg text-muted-foreground">CHF</span>
@@ -262,27 +265,35 @@ export default function SwipeClient() {
       <div className="flex gap-6 z-50 absolute bottom-8">
         <Button
           variant="outline"
-          className="w-20 h-20 border-4 border-red-500 bg-black text-red-500 hover:bg-red-500/20 hover:text-red-400 flex flex-col gap-1"
+          className="w-20 h-20 border-4 bg-black flex flex-col gap-1"
+          style={{
+            borderColor: COLORS.negative,
+            color: COLORS.negative,
+          }}
           onClick={() => handleSwipe('left')}
           disabled={isSubmitting}
         >
           <X className="w-8 h-8" />
-          <span className="text-xs font-bold">SELL</span>
+          <span className="text-xs font-bold">{UI_MESSAGES.sell}</span>
         </Button>
         <Button
           variant="outline"
-          className="w-20 h-20 border-4 border-green-500 bg-black text-green-500 hover:bg-green-500/20 hover:text-green-400 flex flex-col gap-1"
+          className="w-20 h-20 border-4 bg-black flex flex-col gap-1"
+          style={{
+            borderColor: COLORS.positive,
+            color: COLORS.positive,
+          }}
           onClick={() => handleSwipe('right')}
           disabled={isSubmitting}
         >
           <Heart className="w-8 h-8" />
-          <span className="text-xs font-bold">BUY</span>
+          <span className="text-xs font-bold">{UI_MESSAGES.buy}</span>
         </Button>
       </div>
 
       {/* Keyboard hint */}
       <div className="absolute bottom-2 text-xs text-muted-foreground">
-        ← SELL │ BUY →
+        {UI_MESSAGES.swipeHint}
       </div>
     </div>
   );

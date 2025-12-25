@@ -3,17 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useEffects } from '@/contexts/effects-context'
 
-type AnalyzerStatus = 'idle' | 'requesting' | 'listening' | 'synced' | 'error'
-
-interface BeatState {
-  bpm: number
-  status: AnalyzerStatus
-  confidence: number
-  errorMessage?: string
-}
-
 export function BeatSyncMode() {
-  const { isEffectEnabled, getEffectIntensity } = useEffects()
+  const { isEffectEnabled, getEffectIntensity, beatState, setBeatState } = useEffects()
   const isEnabled = isEffectEnabled('beatSync')
   const intensity = getEffectIntensity('beatSync')
 
@@ -22,12 +13,6 @@ export function BeatSyncMode() {
   const rotateAmount = (intensity / 100) * 2 // 0 to 2 degrees
   const translateAmount = (intensity / 100) * 12 // 0 to 12px
   const vignetteOpacity = (intensity / 100) * 0.25 // 0 to 0.25
-
-  const [beatState, setBeatState] = useState<BeatState>({
-    bpm: 0,
-    status: 'idle',
-    confidence: 0,
-  })
 
   const [pulse, setPulse] = useState(false)
   const [translateDir, setTranslateDir] = useState({ x: 0, y: 0 })
@@ -220,107 +205,51 @@ export function BeatSyncMode() {
   if (!isEnabled) return null
 
   return (
-    <>
-      <style jsx global>{`
-        body.effect-beatSync {
-          overflow: hidden;
-        }
+    <style jsx global>{`
+      body.effect-beatSync {
+        overflow: hidden;
+      }
 
-        body.effect-beatSync > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
-          transform-origin: center center;
-          transition: transform 0.08s ease-out;
-        }
+      body.effect-beatSync > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
+        transform-origin: center center;
+        transition: transform 0.08s ease-out;
+      }
 
-        body.effect-beatSync.beat-pulse > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
-          transform: scale(var(--beat-scale, 1.012)) rotate(var(--beat-rotate, 0.3deg)) translate(var(--beat-translate-x, 0px), var(--beat-translate-y, 0px));
-        }
+      body.effect-beatSync.beat-pulse > *:not([data-radix-popper-content-wrapper]):not([vaul-drawer-wrapper]):not([data-effects-settings]) {
+        transform: scale(var(--beat-scale, 1.012)) rotate(var(--beat-rotate, 0.3deg)) translate(var(--beat-translate-x, 0px), var(--beat-translate-y, 0px));
+      }
 
-        /* Vignette pulse effect */
-        body.effect-beatSync::after {
-          content: '';
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          z-index: 9988;
-          background: radial-gradient(
-            ellipse at center,
-            transparent 50%,
-            rgba(0, 0, 0, 0) 100%
-          );
-          transition: background 0.08s ease-out;
-        }
+      /* Vignette pulse effect */
+      body.effect-beatSync::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9988;
+        background: radial-gradient(
+          ellipse at center,
+          transparent 50%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        transition: background 0.08s ease-out;
+      }
 
-        body.effect-beatSync.beat-pulse::after {
-          background: radial-gradient(
-            ellipse at center,
-            transparent 40%,
-            rgba(255, 153, 0, var(--beat-vignette, 0.08)) 100%
-          );
-        }
+      body.effect-beatSync.beat-pulse::after {
+        background: radial-gradient(
+          ellipse at center,
+          transparent 40%,
+          rgba(255, 153, 0, var(--beat-vignette, 0.08)) 100%
+        );
+      }
 
-        /* Ensure dialogs are not affected */
-        [data-radix-popper-content-wrapper],
-        [data-radix-popper-content-wrapper] *,
-        [role="dialog"],
-        [role="dialog"] *,
-        [data-effects-settings] {
-          transform: none !important;
-        }
-      `}</style>
-
-      {/* BPM indicator widget - shows all statuses - Bloomberg style */}
-      {beatState.status !== 'idle' && (
-        <div
-          className={`fixed bottom-20 right-4 z-[9989] px-3 py-2 bg-black border transition-all duration-75 ${
-            beatState.status === 'synced' && pulse
-              ? 'border-accent scale-110'
-              : beatState.status === 'error'
-                ? 'border-red-500'
-                : beatState.status === 'listening'
-                  ? 'border-primary'
-                  : 'border-border'
-          }`}
-        >
-          <div className="text-xs text-muted-foreground uppercase tracking-wide">BPM</div>
-
-          {beatState.status === 'requesting' && (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin h-5 w-5 border-2 border-border border-t-primary" />
-              <span className="text-sm text-muted-foreground">MIC...</span>
-            </div>
-          )}
-
-          {beatState.status === 'listening' && (
-            <div className="flex items-center gap-1">
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1.5 bg-primary animate-pulse"
-                  style={{
-                    height: `${8 + (i % 2) * 8}px`,
-                    animationDelay: `${i * 0.15}s`,
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {beatState.status === 'synced' && (
-            <div className="text-3xl font-bold font-mono tabular-nums text-accent led-glow">
-              {beatState.bpm}
-            </div>
-          )}
-
-          {beatState.status === 'error' && (
-            <button
-              onClick={startListening}
-              className="text-sm text-red-500 hover:text-red-400 transition-colors uppercase"
-            >
-              RETRY
-            </button>
-          )}
-        </div>
-      )}
-    </>
+      /* Ensure dialogs are not affected */
+      [data-radix-popper-content-wrapper],
+      [data-radix-popper-content-wrapper] *,
+      [role="dialog"],
+      [role="dialog"] *,
+      [data-effects-settings] {
+        transform: none !important;
+      }
+    `}</style>
   )
 }

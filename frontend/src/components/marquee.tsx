@@ -4,6 +4,15 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useStocks } from '@/hooks/use-stocks';
 import { generateHeadlinesAiGenerateHeadlinesPost } from '@/lib/api/client';
 import type { StockResponse } from '@/lib/api/client';
+import {
+  StockPrice,
+  PercentChange,
+  TickerSymbol,
+  ChangeArrow,
+  COLORS,
+} from '@/components/display';
+import '@/components/display/marquee.css';
+import { TIMINGS } from '@/constants/timings';
 
 /**
  * Base marquee component with Bloomberg terminal styling.
@@ -27,19 +36,6 @@ function Marquee({
         {children}
         <span aria-hidden="true">{children}</span>
       </div>
-      <style jsx>{`
-        @keyframes marquee {
-          from {
-            transform: translateX(0%);
-          }
-          to {
-            transform: translateX(-50%);
-          }
-        }
-        .animate-marquee {
-          animation: marquee linear infinite;
-        }
-      `}</style>
     </div>
   );
 }
@@ -48,7 +44,7 @@ function Marquee({
  * Stock price marquee - displays real-time stock prices scrolling horizontally.
  * Same style as the ticker view.
  */
-export function StockMarquee() {
+export function StockMarquee({ speed = 1 }: { speed?: number }) {
   const { stocks, isLoading } = useStocks();
 
   const repeatedContent = useMemo(() => {
@@ -57,28 +53,26 @@ export function StockMarquee() {
     return Array(repeatCount)
       .fill(stocks)
       .flat()
-      .map((stock: StockResponse, index: number) => {
-        const isPositive = stock.change >= 0;
-        const changeColor = isPositive ? 'text-green-500' : 'text-red-500';
-        return (
-          <span key={`${stock.ticker}-${index}`} className="flex items-center">
-            <span className="text-muted-foreground mx-2">│</span>
-            <span className="font-bold text-primary uppercase tracking-wide">
-              {stock.ticker}
-            </span>
-            <span className={`font-bold ml-2 ${changeColor}`} style={{ textShadow: '0 0 4px currentColor' }}>
-              {stock.price.toFixed(2)}
-            </span>
-            <span className="text-muted-foreground text-xs ml-1">CHF</span>
-            <span className={`ml-1 font-bold ${changeColor}`}>
-              {stock.change > 0 ? '▲' : stock.change < 0 ? '▼' : '─'}
-            </span>
-            <span className={`ml-0.5 text-sm ${changeColor}`}>
-              {stock.percent_change >= 0 ? '+' : ''}{stock.percent_change?.toFixed(1) || '0.0'}%
-            </span>
-          </span>
-        );
-      });
+      .map((stock: StockResponse, index: number) => (
+        <span key={`${stock.ticker}-${index}`} className="flex items-center">
+          <span className="text-muted-foreground mx-2">│</span>
+          <TickerSymbol ticker={stock.ticker} size="sm" variant="primary" />
+          <StockPrice
+            value={stock.price}
+            change={stock.change}
+            glow
+            size="sm"
+            className="ml-2"
+          />
+          <span className="text-muted-foreground text-xs ml-1">CHF</span>
+          <ChangeArrow value={stock.change} size="sm" className="ml-1" />
+          <PercentChange
+            value={stock.percent_change}
+            size="sm"
+            className="ml-0.5"
+          />
+        </span>
+      ));
   }, [stocks]);
 
   if (isLoading && stocks.length === 0) {
@@ -91,7 +85,8 @@ export function StockMarquee() {
 
   if (!repeatedContent) return null;
 
-  const animationDuration = (stocks?.length || 10) * 4;
+  const baseDuration = (stocks?.length || 10) * 4;
+  const animationDuration = baseDuration / speed;
 
   return (
     <div className="h-8 flex items-center bg-black text-sm shrink-0 overflow-hidden">
@@ -104,7 +99,7 @@ export function StockMarquee() {
  * Headlines marquee - displays AI-generated news headlines scrolling horizontally.
  * Styled exactly like the stock marquee.
  */
-export function HeadlinesMarquee() {
+export function HeadlinesMarquee({ speed = 1 }: { speed?: number }) {
   const { stocks } = useStocks();
   const [headlineQueue, setHeadlineQueue] = useState<string[]>([]);
   const hasLoadedAi = useRef(false);
@@ -154,14 +149,14 @@ export function HeadlinesMarquee() {
     }
   }, []);
 
-  // Fetch headlines on mount and every 2 minutes
+  // Fetch headlines on mount and periodically
   useEffect(() => {
     if (!hasFetchedOnMount.current) {
       hasFetchedOnMount.current = true;
       fetchHeadlines();
     }
 
-    const interval = setInterval(fetchHeadlines, 120000);
+    const interval = setInterval(fetchHeadlines, TIMINGS.headlineRefresh);
     return () => clearInterval(interval);
   }, [fetchHeadlines]);
 
@@ -183,7 +178,8 @@ export function HeadlinesMarquee() {
 
   if (!repeatedContent) return null;
 
-  const animationDuration = Math.max(30, headlineQueue.length * 8);
+  const baseDuration = Math.max(30, headlineQueue.length * 8);
+  const animationDuration = baseDuration / speed;
 
   return (
     <div className="h-8 flex items-center bg-black text-sm shrink-0 overflow-hidden">

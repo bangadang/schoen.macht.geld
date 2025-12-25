@@ -6,10 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useEffects } from '@/contexts/effects-context';
 import { StockMarquee, HeadlinesMarquee } from '@/components/marquee';
+import { MarketStatusBadge } from '@/components/display';
+import { UI_MESSAGES } from '@/constants/messages';
 
 // View configuration with titles for header and status bar
 const VIEW_CONFIG: Record<string, { title: string; label: string }> = {
-  'ticker': { title: 'BÖRSENTICKER', label: 'TICKER' },
   'market-map': { title: 'MARKT-KARTE', label: 'MARKT' },
   'terminal': { title: 'SMG TERMINAL', label: 'TERMINAL' },
   'leaderboard': { title: 'RANGLISTE', label: 'RANGLISTE' },
@@ -17,6 +18,7 @@ const VIEW_CONFIG: Record<string, { title: string; label: string }> = {
   'performance-race': { title: 'PERFORMANCE RACE', label: 'RENNEN' },
   'ipo-spotlight': { title: 'IPO SPOTLIGHT', label: 'IPO' },
   'sector-sunburst': { title: 'SEKTOR SUNBURST', label: 'SEKTOREN' },
+  'bloomberg': { title: 'BLOOMBERG', label: 'BLOOMBERG' },
 };
 
 /**
@@ -31,7 +33,7 @@ export default function DisplayLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { setSettingsPanelOpen, stockMarqueeEnabled, headlinesMarqueeEnabled } = useEffects();
+  const { setSettingsPanelOpen, stockMarqueeEnabled, headlinesMarqueeEnabled, stockMarqueePosition, headlinesMarqueePosition, marqueeScrollSpeed, kioskMode, beatState } = useEffects();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   // Determine the active tab from the URL path to highlight the correct tab.
@@ -39,14 +41,14 @@ export default function DisplayLayout({
   const viewConfig = VIEW_CONFIG[activeTab] || { title: activeTab.toUpperCase(), label: activeTab.toUpperCase() };
 
   const navItems = [
-    { id: 'ticker', label: 'TICKER', href: '/display/ticker', fKey: 'F1' },
-    { id: 'market-map', label: 'MARKT', href: '/display/market-map', fKey: 'F2' },
-    { id: 'terminal', label: 'TERMINAL', href: '/display/terminal', fKey: 'F3' },
-    { id: 'leaderboard', label: 'RANGLISTE', href: '/display/leaderboard', fKey: 'F4' },
-    { id: 'stock-chart', label: 'CHART', href: '/display/stock-chart', fKey: 'F5' },
-    { id: 'performance-race', label: 'RENNEN', href: '/display/performance-race', fKey: 'F6' },
-    { id: 'ipo-spotlight', label: 'IPO', href: '/display/ipo-spotlight', fKey: 'F7' },
-    { id: 'sector-sunburst', label: 'SEKTOREN', href: '/display/sector-sunburst', fKey: 'F8' },
+    { id: 'terminal', label: 'TERMINAL', href: '/display/terminal', fKey: 'F1' },
+    { id: 'leaderboard', label: 'RANGLISTE', href: '/display/leaderboard', fKey: 'F2' },
+    { id: 'market-map', label: 'MARKT', href: '/display/market-map', fKey: 'F3' },
+    { id: 'stock-chart', label: 'CHART', href: '/display/stock-chart', fKey: 'F4' },
+    { id: 'performance-race', label: 'RENNEN', href: '/display/performance-race', fKey: 'F5' },
+    { id: 'ipo-spotlight', label: 'IPO', href: '/display/ipo-spotlight', fKey: 'F6' },
+    { id: 'sector-sunburst', label: 'SEKTOREN', href: '/display/sector-sunburst', fKey: 'F7' },
+    { id: 'bloomberg', label: 'BLOOMBERG', href: '/display/bloomberg', fKey: 'F8' },
   ];
 
   // Update clock every second (set initial time on mount to avoid hydration mismatch)
@@ -61,7 +63,7 @@ export default function DisplayLayout({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F12') {
         e.preventDefault();
-        setSettingsPanelOpen(true);
+        setSettingsPanelOpen((prev) => !prev);
         return;
       }
       const fKeyMatch = e.key.match(/^F([1-8])$/);
@@ -95,31 +97,79 @@ export default function DisplayLayout({
     return day >= 1 && day <= 5 && timeValue >= 540 && timeValue <= 1050;
   };
 
+  // Render marquees based on position settings
+  const renderTopMarquees = () => {
+    const topMarquees = [];
+    if (stockMarqueeEnabled && stockMarqueePosition === 'top') {
+      topMarquees.push(<StockMarquee key="stock-top" speed={marqueeScrollSpeed} />);
+    }
+    if (headlinesMarqueeEnabled && headlinesMarqueePosition === 'top') {
+      topMarquees.push(<HeadlinesMarquee key="headlines-top" speed={marqueeScrollSpeed} />);
+    }
+    return topMarquees;
+  };
+
+  const renderBottomMarquees = () => {
+    const bottomMarquees = [];
+    if (stockMarqueeEnabled && stockMarqueePosition === 'bottom') {
+      bottomMarquees.push(<StockMarquee key="stock-bottom" speed={marqueeScrollSpeed} />);
+    }
+    if (headlinesMarqueeEnabled && headlinesMarqueePosition === 'bottom') {
+      bottomMarquees.push(<HeadlinesMarquee key="headlines-bottom" speed={marqueeScrollSpeed} />);
+    }
+    return bottomMarquees;
+  };
+
   return (
-    <div className="flex h-screen w-screen flex-col bg-black text-foreground">
-      {/* Header - simplified, just logo */}
-      <header className="flex items-center justify-between border-b border-border px-4 py-1">
-        <Link href="/" className="flex items-center gap-2">
-          <Logo className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold text-primary tracking-wide">
-            SMG
+    <div className={`flex h-screen w-screen flex-col bg-black text-foreground ${kioskMode ? 'kiosk-mode' : ''}`}>
+      {/* Header */}
+      <header className="flex items-center justify-between border-b border-border px-4 py-2">
+        <Link href="/" className="flex items-center gap-3">
+          <Logo className="h-8 w-8 text-primary" />
+          <span className="text-xl font-headline font-bold tracking-tight">
+            Schön. <span className="text-primary">Macht.</span> Geld.
           </span>
         </Link>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className={isMarketOpen() ? 'text-green-500' : 'text-red-500'}>
-            ● {isMarketOpen() ? 'OFFEN' : 'GESCHLOSSEN'}
-          </span>
+        <div className="flex items-center gap-4 text-base text-muted-foreground">
+          <MarketStatusBadge isOpen={isMarketOpen()} />
+          {beatState.status !== 'idle' && (
+            <span className={`flex items-center gap-2 px-2 py-0.5 border ${
+              beatState.status === 'synced'
+                ? 'border-accent text-accent'
+                : beatState.status === 'error'
+                ? 'border-red-500 text-red-500'
+                : beatState.status === 'listening'
+                ? 'border-primary text-primary'
+                : 'border-border'
+            }`}>
+              <span className="text-xs uppercase tracking-wide">BPM</span>
+              {beatState.status === 'requesting' && (
+                <span className="text-xs">...</span>
+              )}
+              {beatState.status === 'listening' && (
+                <span className="text-xs">SYNC...</span>
+              )}
+              {beatState.status === 'synced' && (
+                <span className="text-lg font-bold font-mono tabular-nums">
+                  {beatState.bpm}
+                </span>
+              )}
+              {beatState.status === 'error' && (
+                <span className="text-xs">ERR</span>
+              )}
+            </span>
+          )}
           <span>{currentTime ? formatDate(currentTime) : '--.--.----'}</span>
           <span className="text-primary font-bold">{currentTime ? formatTime(currentTime) : '--:--:--'}</span>
         </div>
       </header>
 
-      {/* Stock Marquee - optional */}
-      {stockMarqueeEnabled && <StockMarquee />}
+      {/* Top Marquees */}
+      {renderTopMarquees()}
 
       {/* View Title Bar */}
-      <div className="flex items-center justify-between border-b border-border bg-black px-4 py-1">
-        <h1 className="text-lg font-bold text-primary">
+      <div className="flex items-center justify-between border-b border-border bg-black px-4 py-1.5">
+        <h1 className="text-xl font-bold text-primary">
           ┌─ {viewConfig.title} ─┐
         </h1>
       </div>
@@ -127,26 +177,26 @@ export default function DisplayLayout({
       {/* Main Content */}
       <main className="relative flex-1 overflow-hidden">{children}</main>
 
-      {/* Headlines Marquee - optional */}
-      {headlinesMarqueeEnabled && <HeadlinesMarquee />}
+      {/* Bottom Marquees */}
+      {renderBottomMarquees()}
 
       {/* Status Bar */}
-      <footer className="border-t border-border bg-black px-4 py-1 text-xs text-muted-foreground">
+      <footer className="border-t border-border bg-black px-4 py-1.5 text-sm text-muted-foreground">
         <div className="flex items-center justify-between">
-          <span>┌─ SMG BÖRSE ─┐</span>
-          <span>LIVE │ {viewConfig.title}</span>
+          <span>┌─ {UI_MESSAGES.exchange} ─┐</span>
+          <span>{UI_MESSAGES.live} │ {viewConfig.title}</span>
           <span>┌─ {currentTime ? formatTime(currentTime) : '--:--:--'} ─┐</span>
         </div>
       </footer>
 
       {/* F-Key Legend - now clickable */}
-      <div className="border-t border-border bg-black px-2 py-0.5 text-xs">
+      <div className="border-t border-border bg-black px-2 py-1 text-sm">
         <div className="flex items-center justify-center gap-1">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => router.push(item.href)}
-              className={`flex items-center border border-border px-1.5 py-0.5 transition-colors hover:bg-primary/20 ${
+              className={`flex items-center border border-border px-2 py-0.5 transition-colors hover:bg-primary/20 ${
                 activeTab === item.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
               }`}
             >
@@ -157,11 +207,11 @@ export default function DisplayLayout({
           ))}
           <button
             onClick={() => setSettingsPanelOpen(true)}
-            className="flex items-center border border-border text-muted-foreground px-1.5 py-0.5 ml-2 transition-colors hover:bg-primary/20"
+            className="flex items-center border border-border text-muted-foreground px-2 py-0.5 ml-2 transition-colors hover:bg-primary/20"
           >
             <span className="font-bold">F12</span>
             <span className="mx-0.5">:</span>
-            <span>EINST.</span>
+            <span>{UI_MESSAGES.settings}</span>
           </button>
         </div>
       </div>

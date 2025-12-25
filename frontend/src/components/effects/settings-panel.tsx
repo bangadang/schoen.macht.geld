@@ -1,6 +1,6 @@
 'use client'
 
-import { Settings, Keyboard } from 'lucide-react'
+import { Keyboard } from 'lucide-react'
 import { useEffects, EffectType } from '@/contexts/effects-context'
 import { useEvents } from '@/contexts/events-context'
 import { EFFECT_KEYS, useHotkeys } from '@/hooks/use-hotkeys'
@@ -16,6 +16,13 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface EffectOption {
   id: EffectType
@@ -118,6 +125,14 @@ export function SettingsPanel() {
     setStockMarqueeEnabled,
     headlinesMarqueeEnabled,
     setHeadlinesMarqueeEnabled,
+    stockMarqueePosition,
+    setStockMarqueePosition,
+    headlinesMarqueePosition,
+    setHeadlinesMarqueePosition,
+    marqueeScrollSpeed,
+    setMarqueeScrollSpeed,
+    kioskMode,
+    setKioskMode,
   } = useEffects()
 
   const { eventsEnabled, setEventsEnabled } = useEvents()
@@ -171,25 +186,13 @@ export function SettingsPanel() {
 
   return (
     <>
-      {/* Floating settings button - hidden when panel is open - Bloomberg style */}
-      {!settingsPanelOpen && (
-        <button
-          onClick={() => setSettingsPanelOpen(true)}
-          data-effects-settings
-          className="fixed bottom-4 right-4 z-[9990] p-3 bg-black border border-primary text-primary hover:bg-primary/20 transition-all hover:scale-110"
-          title="Visual Effects Settings (Ctrl+Shift+E)"
-        >
-          <Settings className="h-5 w-5" />
-        </button>
-      )}
-
       {/* Settings sheet */}
       <Sheet open={settingsPanelOpen} onOpenChange={setSettingsPanelOpen}>
         <SheetContent side="right" className="w-80 z-[200] flex flex-col">
           <SheetHeader className="flex-shrink-0">
             <SheetTitle>Settings</SheetTitle>
             <SheetDescription>
-              Toggle effects. Press <kbd className="px-1 py-0.5 text-[10px] font-mono bg-black text-primary border border-border">S</kbd> to open/close.
+              Toggle effects. Press <kbd className="px-1 py-0.5 text-[10px] font-mono bg-black text-primary border border-border">F12</kbd> to open/close.
             </SheetDescription>
           </SheetHeader>
 
@@ -199,34 +202,114 @@ export function SettingsPanel() {
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Laufbänder
               </h4>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="stockMarquee" className="text-base">
-                    Kurse-Laufband
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Aktienkurse oben anzeigen
-                  </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="stockMarquee" className="text-base">
+                      Kurse-Laufband
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Aktienkurse anzeigen
+                    </p>
+                  </div>
+                  <Switch
+                    id="stockMarquee"
+                    checked={stockMarqueeEnabled}
+                    onCheckedChange={setStockMarqueeEnabled}
+                  />
                 </div>
-                <Switch
-                  id="stockMarquee"
-                  checked={stockMarqueeEnabled}
-                  onCheckedChange={setStockMarqueeEnabled}
-                />
+                {stockMarqueeEnabled && (
+                  <div className="pl-1">
+                    <Label htmlFor="stockMarqueePosition" className="text-sm text-muted-foreground">
+                      Position
+                    </Label>
+                    <Select value={stockMarqueePosition} onValueChange={setStockMarqueePosition}>
+                      <SelectTrigger id="stockMarqueePosition" className="w-full mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Oben</SelectItem>
+                        <SelectItem value="bottom">Unten</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="headlinesMarquee" className="text-base">
+                      News-Laufband
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Schlagzeilen anzeigen
+                    </p>
+                  </div>
+                  <Switch
+                    id="headlinesMarquee"
+                    checked={headlinesMarqueeEnabled}
+                    onCheckedChange={setHeadlinesMarqueeEnabled}
+                  />
+                </div>
+                {headlinesMarqueeEnabled && (
+                  <div className="pl-1">
+                    <Label htmlFor="headlinesMarqueePosition" className="text-sm text-muted-foreground">
+                      Position
+                    </Label>
+                    <Select value={headlinesMarqueePosition} onValueChange={setHeadlinesMarqueePosition}>
+                      <SelectTrigger id="headlinesMarqueePosition" className="w-full mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Oben</SelectItem>
+                        <SelectItem value="bottom">Unten</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              {(stockMarqueeEnabled || headlinesMarqueeEnabled) && (
+                <div className="space-y-2 pt-2">
+                  <Label className="text-sm text-muted-foreground">
+                    Scroll-Geschwindigkeit
+                  </Label>
+                  <div className="flex items-center gap-3 pl-1">
+                    <Slider
+                      value={[marqueeScrollSpeed]}
+                      onValueChange={([value]) => setMarqueeScrollSpeed(value)}
+                      min={0.25}
+                      max={3}
+                      step={0.25}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-10 text-right tabular-nums">
+                      {marqueeScrollSpeed.toFixed(2)}x
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Display Mode section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Anzeigemodus
+              </h4>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="headlinesMarquee" className="text-base">
-                    News-Laufband
+                  <Label htmlFor="kioskMode" className="text-base">
+                    Kiosk-Modus
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Schlagzeilen unten anzeigen
+                    Größere Schrift für Overhead-Displays
                   </p>
                 </div>
                 <Switch
-                  id="headlinesMarquee"
-                  checked={headlinesMarqueeEnabled}
-                  onCheckedChange={setHeadlinesMarqueeEnabled}
+                  id="kioskMode"
+                  checked={kioskMode}
+                  onCheckedChange={setKioskMode}
                 />
               </div>
             </div>
@@ -323,7 +406,7 @@ export function SettingsPanel() {
                   <span className="text-muted-foreground">Disable all</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">S</kbd>
+                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">F12</kbd>
                   <span className="text-muted-foreground">Settings</span>
                 </div>
                 <div className="flex items-center gap-2">

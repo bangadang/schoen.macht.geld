@@ -4,27 +4,28 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
+import { TIMINGS } from '@/constants/timings';
+import { EVENT_MESSAGES } from '@/constants/messages';
 
 interface MarketOpenProps {
   event: StockEvent;
   onComplete: () => void;
 }
 
-const ANIMATION_DURATION = 5000; // 5 seconds
-
 export function MarketOpen({ event, onComplete }: MarketOpenProps) {
   const [phase, setPhase] = useState<'flash' | 'bell' | 'text' | 'exit'>('flash');
+  const duration = TIMINGS.eventMarketOpen;
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase('bell'), 300),
       setTimeout(() => setPhase('text'), 1500),
-      setTimeout(() => setPhase('exit'), ANIMATION_DURATION - 800),
-      setTimeout(onComplete, ANIMATION_DURATION),
+      setTimeout(() => setPhase('exit'), duration - 800),
+      setTimeout(onComplete, duration),
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+  }, [onComplete, duration]);
 
   // Generate ring waves
   const ringWaves = Array.from({ length: 4 }).map((_, i) => ({
@@ -141,7 +142,7 @@ export function MarketOpen({ event, onComplete }: MarketOpenProps) {
               className="text-5xl font-bold text-amber-400 tracking-wider"
               style={{ textShadow: '0 0 30px rgba(251, 191, 36, 0.6)' }}
             >
-              MARKT GEÖFFNET
+              {EVENT_MESSAGES.market.open}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -149,7 +150,7 @@ export function MarketOpen({ event, onComplete }: MarketOpenProps) {
               transition={{ delay: 0.8 }}
               className="mt-4 text-xl text-amber-200/80"
             >
-              Die Börse ist eröffnet!
+              {EVENT_MESSAGES.market.openSubtitle}
             </motion.p>
           </motion.div>
         </motion.div>
@@ -161,7 +162,7 @@ export function MarketOpen({ event, onComplete }: MarketOpenProps) {
           transition={{ delay: 2.5 }}
           className="absolute bottom-12 text-sm text-gray-500"
         >
-          Tippen zum Schliessen
+          {EVENT_MESSAGES.tapToDismissSimple}
         </motion.p>
       </motion.div>
     </AnimatePresence>
