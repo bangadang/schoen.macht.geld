@@ -9,6 +9,7 @@ services:
       - DATABASE_URL=sqlite+aiosqlite:///./data/stocks.db
       - STATIC_DIR=/app/data/static
       - ROOT_PATH=/api
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s

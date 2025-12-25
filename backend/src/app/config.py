@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     uvicorn_port: int = 8000
     uvicorn_workers: int = 1  # Use 4+ for production
     root_path: str = ""  # Set to "/api" when behind a reverse proxy stripping prefix
+    base_url: str = "http://localhost:8080"  # Public base URL for asset URLs
 
     # Stock base price
     stock_base_price: float = 1000.0

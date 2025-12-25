@@ -46,13 +46,20 @@ class StockResponse(BaseModel):
     @field_validator("image", mode="before")
     @classmethod
     def extract_image_url(cls, v: object) -> str | None:
-        """Extract the part of an image's path after the STATIC_DIR."""
+        """Convert stored image path to full URL."""
         if v is None:
             return None
-        image_path = "http://localhost:8080/api/static/" + str(v).replace(
-            settings.static_dir, ""
-        )
-        return image_path
+        # v may contain full path like "data/static/images/XXXX.jpg"
+        # Extract path relative to static_dir
+        path = str(v)
+        static_dir = settings.static_dir.rstrip("/")
+        if path.startswith(static_dir):
+            relative_path = path[len(static_dir) :].lstrip("/")
+        else:
+            relative_path = path.lstrip("/")
+        base = settings.base_url.rstrip("/")
+        root = settings.root_path.rstrip("/")
+        return f"{base}{root}/static/{relative_path}"
 
     # Reference price from last snapshot (for percentage change calculation)
     reference_price: float | None = None
