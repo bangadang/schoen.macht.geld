@@ -21,6 +21,9 @@ from app.schemas.ai import (
     GenerateVideoRequest,
     HeadlinesResponse,
     MessageResponse,
+    StockGroup,
+    StockGroupsResponse,
+    StockInGroup,
 )
 from app.services.ai import AIError, ai
 
@@ -97,6 +100,35 @@ VIDEO_PROMPT = (
     "15-second stock market ad for {title}. Dramatic corporate style "
     "with text overlays showing rising stock prices. Slightly absurd tone."
 )
+
+STOCK_GROUPS_PROMPT = """Du bist ein kreativer Finanzanalyst für das Partyspiel
+"Schön. Macht. Geld.", veranstaltet vom "Verein für ambitionierten Konsum (VAK)"
+und dem Club "Amphitheater" in Zürich.
+
+Erstelle lustige, satirische "Sektoren" für die folgenden Aktien.
+
+Aktien:
+{stocks_list}
+
+Gruppiere diese {stock_count} Aktien in genau {group_count} Sektoren.
+Jeder Sektor soll 2-4 Aktien enthalten.
+Erfinde für jeden Sektor einen witzigen, satirischen Firmennamen, der zum Zürcher
+Nachtleben passt.
+
+Beispiele für Sektornamen:
+- "Champagner & Tränen AG"
+- "Kokain-Konjunktur Holdings"
+- "Influencer-Insolvenz Inc."
+- "VIP-Bereich Ventures"
+- "Afterhour Asset Management"
+
+Gib das Ergebnis als JSON-Array aus:
+[
+  {{"name": "Sektor Name", "stocks": ["TICK1", "TICK2"]}},
+  ...
+]
+
+Wichtig: Verwende nur die exakten Ticker aus der Liste oben."""
 
 
 async def _get_stock_or_none(session: AsyncSession, ticker: str | None) -> Stock | None:
@@ -327,6 +359,95 @@ async def generate_headlines(
         headlines=headlines[:count],
         stocks_used=[s.ticker for s in stocks],
     )
+
+
+@router.get("/generate/stock-groups")
+async def generate_stock_groups(
+    session: AsyncSession = Depends(get_session),
+) -> StockGroupsResponse:
+    """
+    Generate AI-created sector groupings for random stocks.
+
+    Returns groups of stocks with satirical sector names for sunburst visualization.
+    """
+    import random
+
+    # Fetch all stocks with prices
+    query = select(Stock).where(col(Stock.price).is_not(None))
+    result = await session.exec(query)
+    all_stocks = list(result.all())
+
+    if len(all_stocks) < 6:
+        # Not enough stocks for meaningful groups
+        return StockGroupsResponse(groups=[])
+
+    # Select 12-18 random stocks (or all if fewer)
+    stock_count = min(len(all_stocks), random.randint(4, 12))
+    selected_stocks = random.sample(all_stocks, stock_count)
+
+    # Determine number of groups (2-4 based on stock count)
+    group_count = min(4, max(2, stock_count // 3))
+
+    # Build stocks list for prompt
+    stocks_list = "\n".join(f"- {s.ticker}: {s.title}" for s in selected_stocks)
+
+    prompt = STOCK_GROUPS_PROMPT.format(
+        stocks_list=stocks_list,
+        stock_count=stock_count,
+        group_count=group_count,
+    )
+
+    # Generate groupings using AI
+    try:
+        response_text = await ai.generate_text(prompt, max_tokens=1500)
+    except AIError as e:
+        logger.error("AI generation failed for stock groups: {}", e)
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+
+    # Parse JSON response
+    try:
+        json_match = re.search(r"\[.*\]", response_text, re.DOTALL)
+        if json_match:
+            raw_groups = json.loads(json_match.group())  # pyright: ignore[reportAny]
+        else:
+            raise ValueError("No JSON array found in response")
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.error(
+            "Failed to parse stock groups JSON: {} - Response: {}", e, response_text
+        )
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
+    # Build stock lookup for enrichment
+    stock_lookup = {s.ticker: s for s in selected_stocks}
+
+    # Transform to response format with enriched stock data
+    groups: list[StockGroup] = []
+    for raw_group in raw_groups:  # pyright: ignore[reportAny]
+        group_name = raw_group.get("name", "Unbenannter Sektor")  # pyright: ignore[reportAny]
+        group_tickers = raw_group.get("stocks", [])  # pyright: ignore[reportAny]
+
+        stocks_in_group: list[StockInGroup] = []
+        for ticker in group_tickers:  # pyright: ignore[reportAny]
+            stock = stock_lookup.get(ticker)  # pyright: ignore[reportAny]
+            if stock:
+                stocks_in_group.append(
+                    StockInGroup(
+                        ticker=stock.ticker,
+                        title=stock.title,
+                        price=stock.price or 0.0,
+                        percent_change=stock.percentage_change or 0.0,
+                    )
+                )
+
+        if stocks_in_group:  # Only add non-empty groups
+            groups.append(StockGroup(name=group_name, stocks=stocks_in_group))  # pyright: ignore[reportAny]
+
+    logger.info(
+        "Generated {} stock groups with {} total stocks",
+        len(groups),
+        sum(len(g.stocks) for g in groups),
+    )
+    return StockGroupsResponse(groups=groups)
 
 
 @router.get("/tasks")

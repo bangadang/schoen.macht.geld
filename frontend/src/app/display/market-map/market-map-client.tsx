@@ -52,27 +52,31 @@ const CustomizedContent = (props: any) => {
             justifyContent: 'space-between',
             color: 'white',
             padding: '4px',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
           <div>
-            <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>{ticker}</div>
+            <div style={{ fontWeight: 700, fontSize: '1.25rem', letterSpacing: '-0.01em' }}>
+              {ticker}
+            </div>
             <div
               style={{
-                fontSize: '0.8rem',
-                opacity: 0.8,
+                fontSize: '0.85rem',
+                opacity: 0.85,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                fontWeight: 500,
               }}
             >
               {name}
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{ fontSize: '1rem', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: '0.95rem', fontFamily: 'ui-monospace, monospace', fontWeight: 600 }}>
               {price?.toFixed(2)} CHF
             </div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '1.1rem', fontFamily: 'ui-monospace, monospace', fontWeight: 700 }}>
               {isPositive ? '+' : ''}
               {(percent_change ?? 0).toFixed(2)}%
             </div>

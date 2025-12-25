@@ -19,7 +19,7 @@
 | [x] | Performance Race | ⭐⭐⭐ | Animated line race of top 5 stocks over time |
 | [x] | IPO Spotlight | ⭐⭐⭐ | Highlight newly registered stocks |
 | [ ] | Correlation Matrix | ⭐ | Heatmap showing stock correlations. Needs new backend endpoint `GET /api/correlation-matrix` |
-| [ ] | Sector Sunburst | ⭐ | AI generates group titles for 3-6 random stocks, displayed as hierarchical sunburst |
+| [x] | Sector Sunburst | ⭐ | AI generates group titles for 3-6 random stocks, displayed as hierarchical sunburst |
 
 ---
 
@@ -47,10 +47,10 @@
 
 | Status | Feature | Priority | Notes |
 |--------|---------|----------|-------|
-| [x] | New #1 Celebration | ⭐⭐ | Confetti + spotlight + large ticker/image reveal before fading to table |
-| [x] | All-Time High | ⭐⭐ | Rocket launch or balloon rise animation |
-| [x] | Big Crash | ⭐⭐ | Explosion particles + screen shake |
-| [ ] | Market Open | ⭐⭐ | Bell animation + flash |
+| [x]    | New #1 Celebration | ⭐⭐ | Confetti + spotlight + large ticker/image reveal before fading to table |
+| [x]    | All-Time High | ⭐⭐ | Rocket launch or balloon rise animation |
+| [x]    | Big Crash | ⭐⭐ | Explosion particles + screen shake |
+| [x]    | Market Open | ⭐⭐ | Bell animation + flash |
 
 ---
 
@@ -110,7 +110,7 @@
 | Endpoint | Purpose | For Feature |
 |----------|---------|-------------|
 | `GET /api/correlation-matrix` | Returns NxN correlation coefficients | Correlation Matrix view |
-| `GET /api/stock-groups` | AI-generated groupings of 3-6 stocks with titles | Sector Sunburst view |
+| `GET /ai/generate/stock-groups` | AI-generated groupings of 3-6 stocks with titles | Sector Sunburst view (implemented) |
 | `GET /api/new-stocks` | Recently registered stocks | IPO Spotlight view |
 
 ---
