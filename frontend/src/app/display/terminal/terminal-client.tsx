@@ -117,6 +117,11 @@ const NewsTicker = ({ stocks }: { stocks: StockResponse[] }) => {
   );
 };
 
+// Auto-scroll speed in pixels per second
+const AUTO_SCROLL_SPEED = 30;
+// Pause at top/bottom in milliseconds
+const SCROLL_PAUSE_MS = 2000;
+
 /**
  * The main client component for the Terminal display. It resembles a financial
  * terminal, showing a table of all stocks with their values and changes.
@@ -124,10 +129,77 @@ const NewsTicker = ({ stocks }: { stocks: StockResponse[] }) => {
  */
 export default function TerminalClient() {
   const { stocks, isLoading } = useStocks();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+  const [scrollDirection, setScrollDirection] = useState<'down' | 'up'>('down');
 
   const sortedStocks = useMemo(() => {
     return [...stocks].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
   }, [stocks]);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (!isAutoScrolling) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let animationId: number;
+    let lastTime = performance.now();
+    let isPaused = false;
+    let pauseTimeout: NodeJS.Timeout;
+
+    const scroll = (currentTime: number) => {
+      if (isPaused) {
+        animationId = requestAnimationFrame(scroll);
+        return;
+      }
+
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      const scrollAmount = AUTO_SCROLL_SPEED * deltaTime;
+      const maxScroll = container.scrollHeight - container.clientHeight;
+
+      if (scrollDirection === 'down') {
+        container.scrollTop += scrollAmount;
+        // Check if reached bottom
+        if (container.scrollTop >= maxScroll - 1) {
+          isPaused = true;
+          pauseTimeout = setTimeout(() => {
+            setScrollDirection('up');
+            isPaused = false;
+          }, SCROLL_PAUSE_MS);
+        }
+      } else {
+        container.scrollTop -= scrollAmount;
+        // Check if reached top
+        if (container.scrollTop <= 1) {
+          isPaused = true;
+          pauseTimeout = setTimeout(() => {
+            setScrollDirection('down');
+            isPaused = false;
+          }, SCROLL_PAUSE_MS);
+        }
+      }
+
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    animationId = requestAnimationFrame(scroll);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      clearTimeout(pauseTimeout);
+    };
+  }, [isAutoScrolling, scrollDirection]);
+
+  // Pause auto-scroll on user interaction
+  const handleUserScroll = useCallback(() => {
+    setIsAutoScrolling(false);
+    // Resume after 5 seconds of no interaction
+    const timeout = setTimeout(() => setIsAutoScrolling(true), 5000);
+    return () => clearTimeout(timeout);
+  }, []);
 
   if (isLoading && stocks.length === 0) {
     return (
@@ -141,8 +213,24 @@ export default function TerminalClient() {
     <div className="h-full flex flex-col p-2 bg-black text-green-400 font-mono overflow-hidden">
       <div className="flex justify-between items-center text-yellow-400 border-b-2 border-yellow-400 pb-1">
         <h1 className="text-2xl">SMG TERMINAL</h1>
+        <button
+          onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+          className={cn(
+            'text-xs px-2 py-1 rounded border',
+            isAutoScrolling
+              ? 'border-green-400 text-green-400'
+              : 'border-gray-600 text-gray-600'
+          )}
+        >
+          {isAutoScrolling ? 'AUTO ▼' : 'AUTO ○'}
+        </button>
       </div>
-      <div className="flex-1 overflow-y-auto mt-1">
+      <div
+        ref={scrollContainerRef}
+        onWheel={handleUserScroll}
+        onTouchStart={handleUserScroll}
+        className="flex-1 overflow-y-auto mt-1 scrollbar-thin scrollbar-thumb-green-800 scrollbar-track-transparent"
+      >
         <Table>
           <TableHeader>
             <TableRow className="border-gray-700 hover:bg-gray-900">
