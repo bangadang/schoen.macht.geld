@@ -95,7 +95,7 @@ export function useStockSnapshots(ticker: string | null, limit = 100) {
 // Race data for performance race view
 export interface RaceDataPoint {
   timestamp: string;
-  [ticker: string]: number | string; // ticker -> normalized price (0-100)
+  [ticker: string]: number | string; // ticker -> actual price
 }
 
 export interface RaceStock {
@@ -115,7 +115,7 @@ const RACE_COLORS = [
   '#8b5cf6', // violet
 ];
 
-export function useRaceData(count = 5, snapshotLimit = 50) {
+export function useRaceData(count = 5, snapshotLimit = 20) {
   const { stocks } = useStocks({ order: 'rank', limit: count });
 
   const { data, error, isLoading } = useSWR(
@@ -142,26 +142,19 @@ export function useRaceData(count = 5, snapshotLimit = 50) {
         percentChange: stock.percent_change,
       }));
 
-      // Find all unique timestamps and normalize the data
-      // We'll create data points at each timestamp where any stock has data
+      // Find all unique timestamps and collect actual prices
       const timestampMap = new Map<string, Record<string, number>>();
 
       allSnapshots.forEach((snapshots, stockIndex) => {
         const ticker = stocks[stockIndex].ticker;
-        // Get min/max for this stock to normalize to 0-100
-        const prices = snapshots.map((s) => s.price);
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
-        const range = maxPrice - minPrice || 1;
 
         snapshots.forEach((snapshot) => {
           const ts = snapshot.created_at;
           if (!timestampMap.has(ts)) {
             timestampMap.set(ts, {});
           }
-          // Normalize price to 0-100 range for fair comparison
-          const normalized = ((snapshot.price - minPrice) / range) * 100;
-          timestampMap.get(ts)![ticker] = normalized;
+          // Use actual price instead of normalized
+          timestampMap.get(ts)![ticker] = snapshot.price;
         });
       });
 
@@ -185,7 +178,7 @@ export function useRaceData(count = 5, snapshotLimit = 50) {
           if (value !== undefined) {
             lastValues[stock.ticker] = value;
           }
-          point[stock.ticker] = lastValues[stock.ticker] ?? 50;
+          point[stock.ticker] = lastValues[stock.ticker] ?? stock.price;
         });
 
         raceData.push(point);
@@ -194,7 +187,7 @@ export function useRaceData(count = 5, snapshotLimit = 50) {
       return { raceStocks, raceData };
     },
     {
-      refreshInterval: 5000,
+      refreshInterval: 10000, // Slower refresh: 10 seconds
       revalidateOnFocus: false,
     }
   );

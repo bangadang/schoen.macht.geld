@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-  Legend,
   Tooltip,
 } from 'recharts';
 import Image from 'next/image';
@@ -16,24 +15,35 @@ import { cn } from '@/lib/utils';
 import { Trophy } from 'lucide-react';
 import { useRaceData, type RaceStock } from '@/hooks/use-stocks';
 
+// Extended stock info with current race value (actual price from chart)
+interface RaceStockWithValue extends RaceStock {
+  raceValue: number; // Current price from chart data
+}
+
 /**
  * Performance Race display.
- * Shows an animated line chart racing the top 5 stocks against each other.
+ * Shows an animated line chart racing the top stocks against each other.
  */
 export default function PerformanceRaceClient() {
-  const { raceStocks, raceData, isLoading } = useRaceData(5, 50);
+  // Fetch up to 5 stocks, but works with fewer; use 20 snapshots for slower sampling
+  const { raceStocks, raceData, isLoading } = useRaceData(5, 20);
 
-  // Sort stocks by current position (latest data point) for the legend
-  const sortedStocks = useMemo(() => {
-    if (raceData.length === 0 || raceStocks.length === 0) return raceStocks;
+  // Sort stocks by current price (latest data point) and include race value
+  const sortedStocks = useMemo((): RaceStockWithValue[] => {
+    if (raceData.length === 0 || raceStocks.length === 0) {
+      return raceStocks.map((s) => ({ ...s, raceValue: s.currentPrice }));
+    }
 
     const latestPoint = raceData[raceData.length - 1];
-    return [...raceStocks].sort((a, b) => {
-      const aValue = (latestPoint[a.ticker] as number) ?? 0;
-      const bValue = (latestPoint[b.ticker] as number) ?? 0;
-      return bValue - aValue; // Higher value = better position
-    });
+    return [...raceStocks]
+      .map((stock) => ({
+        ...stock,
+        raceValue: (latestPoint[stock.ticker] as number) ?? stock.currentPrice,
+      }))
+      .sort((a, b) => b.raceValue - a.raceValue); // Higher price = better position
   }, [raceStocks, raceData]);
+
+  const stockCount = raceStocks.length;
 
   if (isLoading) {
     return (
@@ -43,10 +53,18 @@ export default function PerformanceRaceClient() {
     );
   }
 
+  if (stockCount === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-white bg-black">
+        <div className="text-2xl">Keine Aktien verfügbar</div>
+      </div>
+    );
+  }
+
   if (raceData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-white bg-black">
-        <div className="text-2xl">Keine Daten verfügbar</div>
+        <div className="text-2xl">Keine Kursdaten verfügbar</div>
       </div>
     );
   }
@@ -59,7 +77,11 @@ export default function PerformanceRaceClient() {
           <Trophy className="w-10 h-10 text-yellow-500" />
           <h1 className="text-4xl font-bold">Performance Race</h1>
         </div>
-        <div className="text-gray-400 text-lg">Top 5 Aktien im Vergleich</div>
+        <div className="text-gray-400 text-lg">
+          {stockCount === 1
+            ? '1 Aktie'
+            : `Top ${stockCount} Aktien im Vergleich`}
+        </div>
       </div>
 
       {/* Main content: Chart + Legend */}
@@ -79,11 +101,11 @@ export default function PerformanceRaceClient() {
                 axisLine={{ stroke: 'rgba(255, 255, 255, 0.3)' }}
               />
               <YAxis
-                domain={[0, 100]}
+                domain={['dataMin - 5', 'dataMax + 5']}
                 tick={{ fill: 'white', fontSize: 12 }}
                 tickLine={{ stroke: 'white' }}
                 axisLine={{ stroke: 'rgba(255, 255, 255, 0.3)' }}
-                tickFormatter={(value) => `${value}%`}
+                tickFormatter={(value) => `${value.toFixed(0)} CHF`}
               />
               <Tooltip
                 contentStyle={{
@@ -95,7 +117,7 @@ export default function PerformanceRaceClient() {
                 labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }}
                 formatter={(value: number, name: string) => {
                   const stock = raceStocks.find((s) => s.ticker === name);
-                  return [`${value.toFixed(1)}%`, stock?.title ?? name];
+                  return [`${value.toFixed(2)} CHF`, stock?.title ?? name];
                 }}
               />
               {raceStocks.map((stock) => (
@@ -108,7 +130,7 @@ export default function PerformanceRaceClient() {
                   dot={false}
                   activeDot={{ r: 6, strokeWidth: 2 }}
                   isAnimationActive={true}
-                  animationDuration={1000}
+                  animationDuration={1500}
                   animationEasing="ease-out"
                 />
               ))}
@@ -117,7 +139,7 @@ export default function PerformanceRaceClient() {
         </div>
 
         {/* Legend / Leaderboard */}
-        <div className="w-72 flex flex-col gap-2">
+        <div className="w-80 flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wide mb-2">
             Rangliste
           </h2>
@@ -130,7 +152,13 @@ export default function PerformanceRaceClient() {
   );
 }
 
-function RaceStockCard({ stock, position }: { stock: RaceStock; position: number }) {
+function RaceStockCard({
+  stock,
+  position,
+}: {
+  stock: RaceStockWithValue;
+  position: number;
+}) {
   const isPositive = stock.percentChange >= 0;
 
   return (
@@ -141,7 +169,7 @@ function RaceStockCard({ stock, position }: { stock: RaceStock; position: number
       {/* Position */}
       <div
         className={cn(
-          'w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg',
+          'w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0',
           position === 1 && 'bg-yellow-500 text-black',
           position === 2 && 'bg-gray-400 text-black',
           position === 3 && 'bg-amber-700 text-white',
@@ -174,8 +202,16 @@ function RaceStockCard({ stock, position }: { stock: RaceStock; position: number
         <div className="text-sm text-gray-400 font-mono">{stock.ticker}</div>
       </div>
 
+      {/* Race value (current chart price) */}
+      <div
+        className="px-2 h-8 rounded flex items-center justify-center font-mono font-bold text-sm"
+        style={{ backgroundColor: stock.color + '33', color: stock.color }}
+      >
+        {stock.raceValue.toFixed(2)}
+      </div>
+
       {/* Price & change */}
-      <div className="text-right">
+      <div className="text-right flex-shrink-0">
         <div className="font-mono font-semibold">{stock.currentPrice.toFixed(2)}</div>
         <div
           className={cn(
