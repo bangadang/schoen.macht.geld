@@ -303,7 +303,7 @@ function SpotlightCard({ stock }: { stock: StockResponse }) {
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, type: 'spring' }}
-          className="mx-auto mb-4"
+          className="w-fit mx-auto mb-4"
         >
           <StockImage
             src={stock.image}

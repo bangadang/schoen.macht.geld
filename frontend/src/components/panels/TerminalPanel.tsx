@@ -204,24 +204,22 @@ function TerminalTable({ stocks, compact = false, showAbsoluteChange = false }: 
     <Table className="alternating-rows">
       <TableHeader>
         <TableRow className="border-border">
-          <TableHead className={cn('w-8', compact ? 'px-1 h-6' : 'px-2 h-8')} />
-          <TableHead className={compact ? 'px-1 h-6' : 'px-2 h-8'}>
+          <TableHead className={cn('w-5', compact ? 'px-0.5 h-6' : 'px-2 h-8')} />
+          <TableHead className={compact ? 'px-0.5 h-6' : 'px-2 h-8'}>
             <DisplayLabel>{LABELS.ticker}</DisplayLabel>
           </TableHead>
-          {!compact && (
-            <TableHead className="px-2 h-8">
-              <DisplayLabel>{LABELS.name}</DisplayLabel>
-            </TableHead>
-          )}
-          <TableHead className={cn('text-right', compact ? 'px-1 h-6' : 'px-2 h-8')}>
+          <TableHead className={compact ? 'px-0.5 h-6' : 'px-2 h-8'}>
+            <DisplayLabel>{LABELS.name}</DisplayLabel>
+          </TableHead>
+          <TableHead className={cn('text-right', compact ? 'px-0.5 h-6' : 'px-2 h-8')}>
             <DisplayLabel>{LABELS.price}</DisplayLabel>
           </TableHead>
           {showAbsoluteChange && (
-            <TableHead className={cn('text-right', compact ? 'px-1 h-6' : 'px-2 h-8')}>
+            <TableHead className={cn('text-right', compact ? 'px-0.5 h-6' : 'px-2 h-8')}>
               <DisplayLabel>{LABELS.change}</DisplayLabel>
             </TableHead>
           )}
-          <TableHead className={cn('text-right', compact ? 'px-1 h-6' : 'px-2 h-8')}>
+          <TableHead className={cn('text-right', compact ? 'pl-0.5 pr-1 h-6' : 'px-2 h-8')}>
             <DisplayLabel>{LABELS.percent}</DisplayLabel>
           </TableHead>
         </TableRow>
@@ -235,26 +233,24 @@ function TerminalTable({ stocks, compact = false, showAbsoluteChange = false }: 
               index % 2 === 0 ? 'bg-transparent' : 'bg-primary/5'
             )}
           >
-            <TableCell className={compact ? 'w-8 px-1 py-0.5' : 'w-10 px-2 py-1'}>
+            <TableCell className={compact ? 'w-5 px-0.5 py-0.5' : 'w-10 px-2 py-1'}>
               <ChangeArrow
                 value={
                   stock.rank && stock.previous_rank
                     ? stock.previous_rank - stock.rank
                     : 0
                 }
-                variant="icon"
-                size={compact ? 'xs' : 'sm'}
+                variant="symbol"
+                size={compact ? 'xs' : 'md'}
               />
             </TableCell>
-            <TableCell className={compact ? 'px-1 py-0.5' : 'px-2 py-1'}>
+            <TableCell className={compact ? 'px-0.5 py-0.5' : 'px-2 py-1'}>
               <TickerSymbol ticker={stock.ticker} size={compact ? 'xs' : 'sm'} />
             </TableCell>
-            {!compact && (
-              <TableCell className="px-2 py-1">
-                <StockTitle title={stock.title} size="xs" />
-              </TableCell>
-            )}
-            <TableCell className={cn('text-right', compact ? 'px-1 py-0.5' : 'px-2 py-1')}>
+            <TableCell className={compact ? 'px-0.5 py-0.5' : 'px-2 py-1'}>
+              <StockTitle title={stock.title} size="xs" className="truncate max-w-[140px]" />
+            </TableCell>
+            <TableCell className={cn('text-right', compact ? 'px-0.5 py-0.5' : 'px-2 py-1')}>
               <StockPrice
                 value={stock.price}
                 change={stock.change}
@@ -264,7 +260,7 @@ function TerminalTable({ stocks, compact = false, showAbsoluteChange = false }: 
               />
             </TableCell>
             {showAbsoluteChange && (
-              <TableCell className={cn('text-right', compact ? 'px-1 py-0.5' : 'px-2 py-1')}>
+              <TableCell className={cn('text-right', compact ? 'px-0.5 py-0.5' : 'px-2 py-1')}>
                 <AbsoluteChange
                   value={stock.change}
                   showNeutral
@@ -274,7 +270,7 @@ function TerminalTable({ stocks, compact = false, showAbsoluteChange = false }: 
                 />
               </TableCell>
             )}
-            <TableCell className={cn('text-right', compact ? 'px-1 py-0.5' : 'px-2 py-1')}>
+            <TableCell className={cn('text-right', compact ? 'pl-0.5 pr-1 py-0.5' : 'px-2 py-1')}>
               <PercentChange
                 value={stock.percent_change}
                 showNeutral

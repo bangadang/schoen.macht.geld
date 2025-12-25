@@ -8,10 +8,8 @@ export type EffectType =
   | 'drunk'
   | 'redacted'
   | 'crt'
-  | 'neon'
   | 'dvd'
   | 'binary'
-  | 'aurora'
   | 'glitch'
   | 'beatSync'
   | 'phosphor'
@@ -29,6 +27,9 @@ export interface BeatState {
 }
 
 interface EffectsContextType {
+  // Hydration state (true once localStorage is loaded)
+  hydrated: boolean
+
   // Individual effects
   enabledEffects: Set<EffectType>
   toggleEffect: (effect: EffectType) => void
@@ -88,10 +89,8 @@ const DEFAULT_INTENSITIES: Record<EffectType, number> = {
   drunk: DEFAULT_INTENSITY,
   redacted: DEFAULT_INTENSITY,
   crt: DEFAULT_INTENSITY,
-  neon: DEFAULT_INTENSITY,
   dvd: DEFAULT_INTENSITY,
   binary: DEFAULT_INTENSITY,
-  aurora: DEFAULT_INTENSITY,
   glitch: DEFAULT_INTENSITY,
   beatSync: DEFAULT_INTENSITY,
   phosphor: DEFAULT_INTENSITY,
@@ -112,7 +111,7 @@ interface StoredSettings {
 }
 
 export function EffectsProvider({ children }: { children: React.ReactNode }) {
-  const [enabledEffects, setEnabledEffects] = useState<Set<EffectType>>(new Set())
+  const [enabledEffects, setEnabledEffects] = useState<Set<EffectType>>(new Set(['boot']))
   const [effectIntensities, setEffectIntensities] = useState<Record<EffectType, number>>(DEFAULT_INTENSITIES)
   const [bootComplete, setBootComplete] = useState(false)
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false)
@@ -241,6 +240,7 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
   return (
     <EffectsContext.Provider
       value={{
+        hydrated,
         enabledEffects,
         toggleEffect,
         isEffectEnabled,

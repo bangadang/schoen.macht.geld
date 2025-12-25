@@ -1,9 +1,8 @@
 'use client'
 
-import { Keyboard } from 'lucide-react'
 import { useEffects, EffectType } from '@/contexts/effects-context'
 import { useEvents } from '@/contexts/events-context'
-import { EFFECT_KEYS, useHotkeys } from '@/hooks/use-hotkeys'
+import { EFFECT_KEYS } from '@/hooks/use-hotkeys'
 import {
   Sheet,
   SheetContent,
@@ -52,11 +51,6 @@ const VISUAL_MODES: EffectOption[] = [
     description: 'Retro monitor with scanlines and flicker',
   },
   {
-    id: 'neon',
-    label: 'Neon Glow',
-    description: 'Cyberpunk glowing edges and borders',
-  },
-  {
     id: 'glitch',
     label: 'Glitch/Static',
     description: 'VHS tracking errors and chromatic aberration',
@@ -70,11 +64,6 @@ const VISUAL_MODES: EffectOption[] = [
     id: 'binary',
     label: 'Binary Rain',
     description: 'Subtle 0s and 1s in the margins',
-  },
-  {
-    id: 'aurora',
-    label: 'Aurora Waves',
-    description: 'Slow-moving northern lights gradients',
   },
   {
     id: 'beatSync',
@@ -136,7 +125,6 @@ export function SettingsPanel() {
   } = useEffects()
 
   const { eventsEnabled, setEventsEnabled } = useEvents()
-  const { showHelp } = useHotkeys()
 
   const renderEffectToggle = (effect: EffectOption) => {
     const isEnabled = enabledEffects.has(effect.id)
@@ -402,6 +390,22 @@ export function SettingsPanel() {
                   <span className="text-muted-foreground">Effects</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">M</kbd>
+                  <span className="text-muted-foreground">Stock ticker</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">N</kbd>
+                  <span className="text-muted-foreground">News ticker</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">K</kbd>
+                  <span className="text-muted-foreground">Kiosk mode</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">B</kbd>
+                  <span className="text-muted-foreground">Boot anim</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">E</kbd>
                   <span className="text-muted-foreground">Disable all</span>
                 </div>
@@ -409,20 +413,7 @@ export function SettingsPanel() {
                   <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">F12</kbd>
                   <span className="text-muted-foreground">Settings</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <kbd className="px-1.5 py-0.5 font-mono bg-black text-primary border border-border">?</kbd>
-                  <span className="text-muted-foreground">Help</span>
-                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={showHelp}
-                className="w-full text-xs gap-2"
-              >
-                <Keyboard className="h-3.5 w-3.5" />
-                Show All Shortcuts
-              </Button>
             </div>
 
             <Separator />

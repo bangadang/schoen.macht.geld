@@ -100,7 +100,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = JSON.parse(event.data);
-        console.debug('[WebSocket] Received:', data.type);
+        console.debug('[WebSocket] Received:', data.type, data.event_type, data.metadata);
 
         if (data.type === 'stocks_update') {
           // Update SWR cache for stocks list

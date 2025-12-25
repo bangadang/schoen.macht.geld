@@ -22,14 +22,20 @@ const EFFECT_KEYS: { key: string; effect: EffectType; label: string }[] = [
   { key: '1', effect: 'hacker', label: 'Hacker' },
   { key: '2', effect: 'drunk', label: 'Drunk' },
   { key: '3', effect: 'crt', label: 'CRT' },
-  { key: '4', effect: 'neon', label: 'Neon' },
-  { key: '5', effect: 'glitch', label: 'Glitch' },
-  { key: '6', effect: 'redacted', label: 'Redacted' },
-  { key: '7', effect: 'aurora', label: 'Aurora' },
-  { key: '8', effect: 'binary', label: 'Binary' },
-  { key: '9', effect: 'dvd', label: 'DVD' },
+  { key: '4', effect: 'glitch', label: 'Glitch' },
+  { key: '5', effect: 'redacted', label: 'Redacted' },
+  { key: '6', effect: 'binary', label: 'Binary' },
+  { key: '7', effect: 'dvd', label: 'DVD' },
   { key: '0', effect: 'beatSync', label: 'Beat Sync' },
 ]
+
+// Settings hotkeys
+const SETTING_KEYS = {
+  stockMarquee: { key: 'M', label: 'Stock Ticker' },
+  headlinesMarquee: { key: 'N', label: 'News Ticker' },
+  kioskMode: { key: 'K', label: 'Kiosk Mode' },
+  boot: { key: 'B', label: 'Boot Animation' },
+}
 
 interface HotkeysContextType {
   showHelp: () => void
@@ -40,7 +46,19 @@ const HotkeysContext = createContext<HotkeysContextType | null>(null)
 export function HotkeysProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { toggleEffect, isEffectEnabled, disableAllEffects, enabledEffects, setSettingsPanelOpen } = useEffects()
+  const {
+    toggleEffect,
+    isEffectEnabled,
+    disableAllEffects,
+    enabledEffects,
+    setSettingsPanelOpen,
+    stockMarqueeEnabled,
+    setStockMarqueeEnabled,
+    headlinesMarqueeEnabled,
+    setHeadlinesMarqueeEnabled,
+    kioskMode,
+    setKioskMode,
+  } = useEffects()
   const [hasShownInitialHelp, setHasShownInitialHelp] = useState(false)
 
   const showHelp = useCallback(() => {
@@ -52,16 +70,16 @@ export function HotkeysProvider({ children }: { children: React.ReactNode }) {
             <span className="font-semibold">Views:</span> F1-F8
           </div>
           <div>
-            <span className="font-semibold">Effects:</span> 1-9, 0
+            <span className="font-semibold">Effects:</span> 1-7, 0
           </div>
           <div>
-            <span className="font-semibold">E</span> = Disable all effects
+            <span className="font-semibold">M</span> = Stock ticker | <span className="font-semibold">N</span> = News ticker
           </div>
           <div>
-            <span className="font-semibold">F12</span> = Settings panel
+            <span className="font-semibold">K</span> = Kiosk mode | <span className="font-semibold">B</span> = Boot animation
           </div>
           <div>
-            <span className="font-semibold">?</span> = Show this help
+            <span className="font-semibold">E</span> = Disable effects | <span className="font-semibold">F12</span> = Settings
           </div>
         </div>
       ),
@@ -128,6 +146,58 @@ export function HotkeysProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      // Handle M for stock marquee toggle
+      if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        const newState = !stockMarqueeEnabled
+        setStockMarqueeEnabled(newState)
+        toast({
+          title: `Stock Ticker ${newState ? 'Enabled' : 'Disabled'}`,
+          description: `Press M to toggle`,
+          duration: 1500,
+        })
+        return
+      }
+
+      // Handle N for headlines marquee toggle
+      if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        const newState = !headlinesMarqueeEnabled
+        setHeadlinesMarqueeEnabled(newState)
+        toast({
+          title: `News Ticker ${newState ? 'Enabled' : 'Disabled'}`,
+          description: `Press N to toggle`,
+          duration: 1500,
+        })
+        return
+      }
+
+      // Handle K for kiosk mode toggle
+      if (e.key.toLowerCase() === 'k' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        const newState = !kioskMode
+        setKioskMode(newState)
+        toast({
+          title: `Kiosk Mode ${newState ? 'Enabled' : 'Disabled'}`,
+          description: newState ? 'Larger text for displays' : 'Normal text size',
+          duration: 1500,
+        })
+        return
+      }
+
+      // Handle B for boot animation toggle
+      if (e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        toggleEffect('boot')
+        const isNowEnabled = !isEffectEnabled('boot')
+        toast({
+          title: `Boot Animation ${isNowEnabled ? 'Enabled' : 'Disabled'}`,
+          description: isNowEnabled ? 'Will play on next page load' : 'Boot sequence disabled',
+          duration: 1500,
+        })
+        return
+      }
+
       // Handle F1-F8 for views
       const fKeyMatch = e.key.match(/^F([1-8])$/)
       if (fKeyMatch) {
@@ -164,7 +234,7 @@ export function HotkeysProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router, toggleEffect, isEffectEnabled, disableAllEffects, enabledEffects, setSettingsPanelOpen, showHelp])
+  }, [router, toggleEffect, isEffectEnabled, disableAllEffects, enabledEffects, setSettingsPanelOpen, showHelp, stockMarqueeEnabled, setStockMarqueeEnabled, headlinesMarqueeEnabled, setHeadlinesMarqueeEnabled, kioskMode, setKioskMode])
 
   return (
     <HotkeysContext.Provider value={{ showHelp }}>
@@ -182,4 +252,4 @@ export function useHotkeys() {
 }
 
 // Export for use in settings panel
-export { VIEW_ROUTES, EFFECT_KEYS }
+export { VIEW_ROUTES, EFFECT_KEYS, SETTING_KEYS }

@@ -164,18 +164,10 @@ export default function SwipeClient() {
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
-      {/* Header info bar */}
-      <div className="absolute top-16 left-0 right-0 z-10 px-4">
-        <div className="flex items-center justify-between text-sm text-muted-foreground border border-border bg-black/80 px-3 py-1">
-          <span>┌─ {UI_MESSAGES.stockSwipe} ─┐</span>
-          <span>#{currentIndex + 1} / {stockQueue.length}</span>
-        </div>
-      </div>
-
       <div className="relative w-full h-full flex items-center justify-center">
         <motion.div
           key={currentStock.ticker}
-          className="absolute w-[90vw] h-[75vh] max-w-sm max-h-[550px]"
+          className="absolute w-[90vw] h-[85vh] max-w-md max-h-[700px]"
           style={{ x, rotate, opacity, zIndex: 1 }}
           drag={isTouchDevice ? 'x' : false}
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
@@ -247,7 +239,7 @@ export default function SwipeClient() {
                 </div>
 
                 {/* Description */}
-                <p className="text-sm text-muted-foreground line-clamp-2">{currentStock.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-4">{currentStock.description}</p>
 
                 {/* Rank info */}
                 {currentStock.rank && (

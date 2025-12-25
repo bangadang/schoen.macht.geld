@@ -120,8 +120,12 @@ class MarketEventsService:
 
         # Market close: was open, now closed (happens before market_open in same cycle)
         if was_open and not is_open:
-            # Find leader for the day summary
-            leader = min(stocks, key=lambda s: s.rank or 999) if stocks else None
+            # Find the stock that moved the most during the day (highest % gain)
+            top_mover = None
+            if stocks:
+                stocks_with_change = [s for s in stocks if s.percentage_change is not None]
+                if stocks_with_change:
+                    top_mover = max(stocks_with_change, key=lambda s: s.percentage_change or 0)
 
             event: dict[str, object] = {
                 "type": "event",
@@ -131,14 +135,15 @@ class MarketEventsService:
                     "snapshots_per_day": snapshots_per_day,
                 },
             }
-            if leader:
-                event["leader"] = self._stock_to_dict(leader)
+            if top_mover:
+                event["stock"] = self._stock_to_dict(top_mover)
 
             events.append(event)
             logger.info(
-                "Event: market_close - Day {} complete ({} snapshots)",
+                "Event: market_close - Day {} complete ({} snapshots), top mover: {}",
                 curr_day,
                 snapshots_per_day,
+                top_mover.ticker if top_mover else "none",
             )
 
         # Market open: market day advanced and market is open, or initial market open

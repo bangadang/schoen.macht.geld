@@ -31,28 +31,48 @@ router = APIRouter()
 
 # Prompt templates (German, Party-Themed for "Schön. Macht. Geld.")
 DESCRIPTION_PROMPT = """Du bist ein Ghostwriter für die exzessive Zürcher Partyszene und
-schreibst witzige, bissige "Börsenprospekte" in der Ich-Perspektive für das Partyspiel
-"Schön. Macht. Geld.". Das Spiel wird vom "Verein für ambitionierten Konsum (VAK)" und
-dem Club "Amphitheater"veranstaltet.
-Das Motto: hedonistischer Konsum, Macht, Schönheit und Drogen.
+schreibst witzige, bissige "Börsenprospekte" für das Partyspiel "Schön. Macht. Geld.".
+Das Spiel wird vom "Verein für ambitionierten Konsum (VAK)" und dem Club "Amphitheater"
+veranstaltet. Das Motto: hedonistischer Konsum, Macht, Schönheit und Drogen.
 
-Schreibe eine sarkastische, ironische und prahlerische Profilbeschreibung in der
-Ich-Form, basierend auf dem Spitznamen der Person.
+Schreibe eine sarkastische, ironische und prahlerische Profilbeschreibung für die Aktie,
+basierend auf dem Aktientitel (Name der Person/Firma).
 
-Spitzname: {title}
+Aktientitel: {title}
 Aktuelle Beschreibung (falls vorhanden): {description}
 
 Regeln:
-1. **Perspektive:** Schreibe immer aus der Ich-Perspektive.
+1. **Stil:** Variiere zwischen verschiedenen Formaten:
+   - Ich-Perspektive (prahlerisch, selbstverliebt)
+   - Corporate Mission Statement (Unternehmensphilosophie-Parodie)
+   - Investor Pitch (Q3 Highlights, Kerngeschäft, Prognosen)
+   - Tagline (kurz, prägnant, memorable)
 2. **Ton:** Selbstverliebt, sarkastisch, satirisch. Mische Finanzjargon mit Party-Slang.
-3. **Themen:** Spiele mit Klischees über das Zürcher Nachtleben:
-               Konsum, Status, Oberflächlichkeit und Exzesse.
-4. **Länge:** Maximal 350 Zeichen (inkl. Leerzeichen).
+3. **Themen:** Zürcher Nachtleben, Konsum, Status, Oberflächlichkeit, Exzesse,
+   Networking, VIP-Kultur, fragwürdige Substanzen, Afterhours.
+4. **Länge:** Maximal 500 Zeichen (inkl. Leerzeichen).
 5. **Sprache:** Deutsch.
 
-Beispiel: "Mein Kurs? Steigt schneller als mein Puls nach der dritten Line. Ich bin
-keine Aktie, ich bin ein Gerücht, eine Legende auf dem Zürcher Parkett. Investier
-jetzt, bevor ich zu teuer für dein kleines Portfolio werde."
+Beispiele (variiere den Stil!):
+- "Mission Statement: Wir maximieren hedonistische Rendite bei minimalem Verantwortungs-
+  bewusstsein. Unsere Kernkompetenz? Networking zwischen 2 und 6 Uhr morgens."
+- "Unternehmensphilosophie: Move fast and break hearts. Unsere Stakeholder sind alle,
+  die meine Nummer haben. Meine Shareholder sind alle, die sie gerne hätten."
+- "Premium seit der Geburt. Exklusiv bis zum Blackout."
+- "Think different. Sniff different."
+- "Just do it. Frag nicht was."
+- "The Future is Now. Der Kater ist Morgen."
+- "Kerngeschäft: strategische Präsenz an exklusiven Locations. Wettbewerbsvorteil:
+  Ich kenne den Türsteher. Risikohinweis: keiner."
+- "Ich bin keine Investition – ich bin ein Lifestyle. Wer mich kauft, kauft Zugang
+  zu Räumen, die auf keiner Karte existieren. Terms & Conditions: Es gibt keine."
+- "Analyst*innen empfehlen: STRONG BUY. Meine Ex empfiehlt: SELL. Der Markt
+  entscheidet. Der Markt bin ich."
+- "Mein Portfolio besteht aus Vitamin K, fragwürdigen Entscheidungen und einem
+  Netzwerk aus Menschen, die alle 'irgendwas mit Medien' machen. ROI? Return on
+  Intoxication."
+- "Mein Lebenswerk? Eine Studie in exzessiver Selbstüberschätzung, finanziert durch
+  Vitamin B und den Glauben, dass Schlaf überbewertet ist. Kaufempfehlung: stark."
 
 Gib nur die Beschreibung aus, keinen anderen Text."""
 
@@ -67,16 +87,21 @@ von genau {count} kurzen, schlagkräftigen und urkomischen Schlagzeilen. Jede Sc
 sollte für sich stehen. Der Ton sollte scharf, ironisch und voller Satire sein. Denk an
 eine Mischung aus Society-Klatsch und Finanz-Desaster.
 
-Achte auf korrekte deutsche Rechtschreibung und die korrekte Verwendung
-von Umlauten (ä, ö, ü).
-
 Hier sind die Daten der Top-Aktien:
 {stocks_data}
 
-Generiere {count} einzigartige Schlagzeilen.
-Sei provokant und einprägsam. Konzentriere dich auf Themen wie soziale Kletterei,
-vergänglichen Ruhm, schlechte Entscheidungen auf Partys, Exzesse im Zürcher Nachtleben
-und die Absurdität des Ganzen.
+Regeln:
+1. **Sentiment passend zur Kursrichtung:**
+   - Steigende Aktien (positive Veränderung): Übertriebenes Lob, absurde Erfolgs-
+     geschichten, Hype, FOMO, "Genie entdeckt", "Investor-Liebling"
+   - Fallende Aktien (negative Veränderung): Dramatische Abstürze, Skandale, Gerüchte,
+     Schadenfreude, "Absturz des Jahres", "Panikverkäufe", "War da was auf dem Klo?"
+2. **Jede Schlagzeile MUSS den Aktientitel ODER das Börsenkürzel enthalten.**
+3. **Achte auf korrekte deutsche Rechtschreibung und Umlaute (ä, ö, ü).**
+4. **Themen:** Soziale Kletterei, vergänglicher Ruhm, Party-Fails, Exzesse im Zürcher
+   Nachtleben, VIP-Abstiege, Afterhour-Tragödien, Networking-Katastrophen.
+
+Generiere {count} einzigartige Schlagzeilen. Sei provokant und einprägsam.
 
 Gib die Schlagzeilen als JSON-Array aus:
 ["Schlagzeile 1", "Schlagzeile 2", ...]
@@ -93,44 +118,89 @@ SEHR WICHTIG: Nur das JSON-Array der formatierten Schlagzeilen, kein anderer Tex
 
 IMAGE_PROMPTS = {
     ImageType.MAIN: (
-        "Corporate stock photo for {title}, professional but slightly off and weird"
+        "Corporate portrait photo for a Zurich party personality stock called '{title}'. "
+        "Professional headshot lighting with a satirical twist. The subject exudes "
+        "self-importance and excessive confidence. Style: 1980s corporate meets modern "
+        "influencer culture. Slight VHS grain or film texture. Gold and black color "
+        "accents. The person looks like they just came from a champagne-fueled networking "
+        "event. Subtle absurdity: maybe an out-of-place luxury item, unusual background, "
+        "or slightly too-perfect hair. Think: Wolf of Wall Street meets Zurich club scene."
     ),
     ImageType.LOGO: (
-        "Minimalist corporate logo for {title}, clean vector style, simple design"
+        "Minimalist corporate logo for '{title}', a satirical Zurich party stock. "
+        "Swiss design principles: clean lines, geometric shapes, single accent color. "
+        "No text, white or dark background. Hidden satirical element optional (subtle "
+        "party reference, champagne glass shape, pill outline, etc.). Style: if a "
+        "luxury Swiss bank rebranded for the club scene. Vector-ready, simple enough "
+        "to work at small sizes. Colors: gold, black, or neon accents."
     ),
     ImageType.BILLBOARD: (
-        "Highway billboard ad for {title} stock, dramatic and absurd"
+        "Highway billboard advertisement for stock '{title}'. Dramatic nighttime "
+        "lighting, bold sans-serif text saying 'INVEST NOW' or 'BUY {title}'. "
+        "Features a confident person in expensive attire looking directly at viewer. "
+        "Intentionally tacky aesthetic like a late-night infomercial or casino ad. "
+        "Lens flares, gold gradients, stock chart going up in background. "
+        "Style: Las Vegas meets Swiss private banking. Slightly desperate energy. "
+        "Think: the kind of ad that makes you question capitalism."
     ),
     ImageType.WEBSITE: (
-        "Screenshot of corporate website hero section for {title}, modern design"
+        "Hero section screenshot of a corporate website for '{title}'. Modern SaaS "
+        "aesthetic with dark mode, gradient background (purple to black or gold to "
+        "black). Floating glassmorphism UI elements. Absurdly corporate buzzwords "
+        "visible: 'Synergizing Excellence', 'Disrupting Disruption', 'Premium Human "
+        "Capital'. Fake testimonials or trust badges. Stock chart graphic. "
+        "Style: if a fintech startup was designed by someone who parties too much. "
+        "Clean typography, too many gradient buttons, subtle particle effects."
     ),
 }
 
 VIDEO_PROMPT = (
-    "15-second stock market ad for {title}. Dramatic corporate style "
-    "with text overlays showing rising stock prices. Slightly absurd tone."
+    "Corporate stock advertisement for '{title}', a satirical Zurich party personality. "
+    "Scene breakdown: "
+    "(1) Slow zoom on logo or confident person's face, dramatic lighting, 2 seconds. "
+    "(2) Abstract stock chart animation trending upward, green numbers flying, 2 seconds. "
+    "(3) Person in expensive suit nodding approvingly, champagne glass visible, 2 seconds. "
+    "(4) Final frame: '{title}' text with 'INVEST NOW' call-to-action, gold on black. "
+    "Overall style: 1980s VHS corporate video aesthetic with slight grain and scan lines. "
+    "Color palette: gold, black, green (money colors). Implied dramatic synth music. "
+    "Tone: satirical take on Wolf of Wall Street meets Swiss banking commercial. "
+    "The whole thing should feel like a parody of excess and self-importance."
 )
 
 STOCK_GROUPS_PROMPT = """Du bist ein kreativer Finanzanalyst für das Partyspiel
 "Schön. Macht. Geld.", veranstaltet vom "Verein für ambitionierten Konsum (VAK)"
 und dem Club "Amphitheater" in Zürich.
 
-Erstelle lustige, satirische "Sektoren" für die folgenden Aktien.
+Erstelle lustige, satirische "Sektoren" (Branchen/Kategorien) für die folgenden Aktien.
+Sektoren sind KATEGORIEN, in die mehrere Aktien gruppiert werden – wie Branchen an
+der echten Börse, aber satirisch auf das Zürcher Nachtleben bezogen.
 
 Aktien:
 {stocks_list}
 
 Gruppiere diese {stock_count} Aktien in genau {group_count} Sektoren.
 Jeder Sektor soll 2-4 Aktien enthalten.
-Erfinde für jeden Sektor einen witzigen, satirischen Firmennamen, der zum Zürcher
-Nachtleben passt.
 
-Beispiele für Sektornamen:
-- "Champagner & Tränen AG"
-- "Kokain-Konjunktur Holdings"
-- "Influencer-Insolvenz Inc."
-- "VIP-Bereich Ventures"
-- "Afterhour Asset Management"
+Regeln:
+1. **Sektornamen sind KATEGORIEN**, nicht Firmennamen. Sie beschreiben eine Gruppe
+   von ähnlichen "Persönlichkeiten" oder "Geschäftsfeldern".
+2. **Analysiere die Aktientitel** und gruppiere nach gemeinsamen Themen, Vibes oder
+   Archetypen (z.B. alle Party-Starter zusammen, alle Networker zusammen).
+3. **Variiere den Stil:** Mal als Branche, mal als Bewegung, mal als Phänomen.
+
+Beispiele für Sektornamen (KATEGORIEN, nicht Firmennamen!):
+- "Nachtaktive Rohstoffe" (Substanzen, Konsumgüter)
+- "Luxusgüter & Eitelkeiten" (Appearance-fokussierte Persönlichkeiten)
+- "Entertainment & Eskalation" (DJs, Performer, Party-Starter)
+- "Blue Chip Beauties" (Zuverlässig attraktive Dauerbrenner)
+- "Stabile Seitwärtsbewegung" (Immer da, nie aufregend)
+- "Frühschicht-Veteranen" (Die 6-Uhr-morgens-Überlebenden)
+- "Peak-Hour Performers" (1-3 Uhr Spezialisten)
+- "Pharma & Freizeitchemie" (Selbsterklärend)
+- "Kommunikation & Klatsch" (Gossip, Drama, Influencer)
+- "Transport & Eskapismus" (Immer am Gehen, Kommen, Verschwinden)
+- "Immobilien & Hinterzimmer" (VIP-Areas, exklusive Spaces)
+- "Finanzdienstleistungen" (Die, die immer "was haben")
 
 Gib das Ergebnis als JSON-Array aus:
 [

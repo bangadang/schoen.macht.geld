@@ -32,7 +32,9 @@ class GoogleAIClient:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "maxOutputTokens": 500,
-                "temperature": 1.0,
+                "temperature": settings.ai_temperature,
+                "topP": settings.ai_top_p,
+                # Note: Google AI doesn't support frequency/presence penalty
             },
         }
 

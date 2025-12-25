@@ -32,6 +32,7 @@ export function StockListItem({
 }: StockListItemProps) {
   return (
     <button
+      data-stock-card
       onClick={onClick}
       className={cn(
         'w-full flex items-center justify-between px-1 py-0.5 text-xs border transition-colors',

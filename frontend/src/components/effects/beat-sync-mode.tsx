@@ -13,6 +13,12 @@ export function BeatSyncMode() {
   const rotateAmount = (intensity / 100) * 2 // 0 to 2 degrees
   const translateAmount = (intensity / 100) * 12 // 0 to 12px
   const vignetteOpacity = (intensity / 100) * 0.25 // 0 to 0.25
+  const flashOpacity = (intensity / 100) * 0.15 // 0 to 0.15
+  const chromaticOffset = (intensity / 100) * 4 // 0 to 4px
+  const scanlinesOpacity = (intensity / 100) * 0.3 // 0 to 0.3
+  const cardScale = 1 + (intensity / 100) * 0.05 // 1.0 to 1.05
+  const glowIntensity = (intensity / 100) * 20 // 0 to 20px blur
+  const priceGlow = (intensity / 100) * 8 // 0 to 8px
 
   const [pulse, setPulse] = useState(false)
   const [translateDir, setTranslateDir] = useState({ x: 0, y: 0 })
@@ -173,6 +179,12 @@ export function BeatSyncMode() {
       body.style.setProperty('--beat-translate-x', `${translateDir.x * translateAmount}px`)
       body.style.setProperty('--beat-translate-y', `${translateDir.y * translateAmount}px`)
       body.style.setProperty('--beat-vignette', String(vignetteOpacity))
+      body.style.setProperty('--beat-flash', String(flashOpacity))
+      body.style.setProperty('--beat-chromatic', `${chromaticOffset}px`)
+      body.style.setProperty('--beat-scanlines', String(scanlinesOpacity))
+      body.style.setProperty('--beat-card-scale', String(cardScale))
+      body.style.setProperty('--beat-glow', `${glowIntensity}px`)
+      body.style.setProperty('--beat-price-glow', `${priceGlow}px`)
     } else {
       body.classList.remove('effect-beatSync')
       body.style.removeProperty('--beat-scale')
@@ -180,6 +192,12 @@ export function BeatSyncMode() {
       body.style.removeProperty('--beat-translate-x')
       body.style.removeProperty('--beat-translate-y')
       body.style.removeProperty('--beat-vignette')
+      body.style.removeProperty('--beat-flash')
+      body.style.removeProperty('--beat-chromatic')
+      body.style.removeProperty('--beat-scanlines')
+      body.style.removeProperty('--beat-card-scale')
+      body.style.removeProperty('--beat-glow')
+      body.style.removeProperty('--beat-price-glow')
     }
 
     return () => {
@@ -189,8 +207,14 @@ export function BeatSyncMode() {
       body.style.removeProperty('--beat-translate-x')
       body.style.removeProperty('--beat-translate-y')
       body.style.removeProperty('--beat-vignette')
+      body.style.removeProperty('--beat-flash')
+      body.style.removeProperty('--beat-chromatic')
+      body.style.removeProperty('--beat-scanlines')
+      body.style.removeProperty('--beat-card-scale')
+      body.style.removeProperty('--beat-glow')
+      body.style.removeProperty('--beat-price-glow')
     }
-  }, [isEnabled, scaleAmount, rotateAmount, translateAmount, translateDir, vignetteOpacity])
+  }, [isEnabled, scaleAmount, rotateAmount, translateAmount, translateDir, vignetteOpacity, flashOpacity, chromaticOffset, scanlinesOpacity, cardScale, glowIntensity, priceGlow])
 
   // Apply pulse class
   useEffect(() => {
@@ -205,7 +229,9 @@ export function BeatSyncMode() {
   if (!isEnabled) return null
 
   return (
-    <style jsx global>{`
+    <>
+      <div className="beat-scanlines-overlay" />
+      <style jsx global>{`
       body.effect-beatSync {
         overflow: hidden;
       }
@@ -231,7 +257,7 @@ export function BeatSyncMode() {
           transparent 50%,
           rgba(0, 0, 0, 0) 100%
         );
-        transition: background 0.08s ease-out;
+        transition: background 0.08s ease-out, opacity 0.08s ease-out;
       }
 
       body.effect-beatSync.beat-pulse::after {
@@ -242,6 +268,91 @@ export function BeatSyncMode() {
         );
       }
 
+      /* Flash/Strobe effect overlay */
+      body.effect-beatSync::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9987;
+        background: rgba(255, 153, 0, 0);
+        transition: background 0.05s ease-out;
+      }
+
+      body.effect-beatSync.beat-pulse::before {
+        background: rgba(255, 153, 0, var(--beat-flash, 0.1));
+      }
+
+      /* Scanlines pulse effect */
+      body.effect-beatSync .beat-scanlines-overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9986;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0) 4px
+        );
+        opacity: 0;
+        transition: opacity 0.08s ease-out;
+      }
+
+      body.effect-beatSync.beat-pulse .beat-scanlines-overlay {
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, var(--beat-scanlines, 0.2)) 2px,
+          rgba(0, 0, 0, var(--beat-scanlines, 0.2)) 4px
+        );
+        opacity: 1;
+      }
+
+      /* Chromatic aberration effect */
+      body.effect-beatSync.beat-pulse main {
+        text-shadow:
+          calc(-1 * var(--beat-chromatic, 2px)) 0 rgba(255, 0, 0, 0.3),
+          var(--beat-chromatic, 2px) 0 rgba(0, 255, 255, 0.3);
+      }
+
+      /* Stock cards bounce effect */
+      body.effect-beatSync [data-stock-card] {
+        transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+      }
+
+      body.effect-beatSync.beat-pulse [data-stock-card] {
+        transform: scale(var(--beat-card-scale, 1.03));
+        box-shadow: 0 0 var(--beat-glow, 15px) rgba(255, 153, 0, 0.4);
+      }
+
+      /* Chart line glow effect */
+      body.effect-beatSync .recharts-line path,
+      body.effect-beatSync .recharts-area path,
+      body.effect-beatSync [data-chart-line] {
+        transition: filter 0.08s ease-out;
+      }
+
+      body.effect-beatSync.beat-pulse .recharts-line path,
+      body.effect-beatSync.beat-pulse .recharts-area path,
+      body.effect-beatSync.beat-pulse [data-chart-line] {
+        filter: drop-shadow(0 0 var(--beat-glow, 10px) rgba(255, 153, 0, 0.6));
+      }
+
+      /* Price flash effect */
+      body.effect-beatSync [data-price],
+      body.effect-beatSync [data-percent-change] {
+        transition: text-shadow 0.08s ease-out, transform 0.08s ease-out;
+      }
+
+      body.effect-beatSync.beat-pulse [data-price],
+      body.effect-beatSync.beat-pulse [data-percent-change] {
+        text-shadow: 0 0 var(--beat-price-glow, 6px) currentColor;
+        transform: scale(1.05);
+      }
+
       /* Ensure dialogs are not affected */
       [data-radix-popper-content-wrapper],
       [data-radix-popper-content-wrapper] *,
@@ -249,7 +360,9 @@ export function BeatSyncMode() {
       [role="dialog"] *,
       [data-effects-settings] {
         transform: none !important;
+        text-shadow: none !important;
       }
     `}</style>
+    </>
   )
 }

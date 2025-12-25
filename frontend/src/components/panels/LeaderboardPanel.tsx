@@ -71,6 +71,7 @@ export function LeaderboardPanel({
             return (
               <div
                 key={stock.ticker}
+                data-stock-card
                 className={cn(
                   'grid items-center gap-1 border',
                   compact

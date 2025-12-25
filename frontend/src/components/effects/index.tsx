@@ -7,16 +7,14 @@ import { HackerMode } from './hacker-mode'
 import { DrunkMode } from './drunk-mode'
 import { RedactedMode } from './redacted-mode'
 import { CrtMode } from './crt-mode'
-import { NeonMode } from './neon-mode'
 import { GlitchMode } from './glitch-mode'
 import { DvdMode } from './dvd-mode'
 import { BinaryMode } from './binary-mode'
-import { AuroraMode } from './aurora-mode'
 import { BeatSyncMode } from './beat-sync-mode'
 import { SettingsPanel } from './settings-panel'
 
 // Effects that need body classes for CSS styling
-const BODY_CLASS_EFFECTS: EffectType[] = ['hacker', 'drunk', 'redacted', 'crt', 'neon', 'glitch']
+const BODY_CLASS_EFFECTS: EffectType[] = ['hacker', 'drunk', 'redacted', 'crt', 'glitch']
 
 // Retro CRT effect class mappings
 const RETRO_EFFECT_CLASSES: Record<string, string> = {
@@ -86,11 +84,9 @@ export function EffectsLayer() {
       <DrunkMode />
       <RedactedMode />
       <CrtMode />
-      <NeonMode />
       <GlitchMode />
       <DvdMode />
       <BinaryMode />
-      <AuroraMode />
       <BeatSyncMode />
       <SettingsPanel />
     </>
@@ -102,10 +98,8 @@ export { HackerMode } from './hacker-mode'
 export { DrunkMode } from './drunk-mode'
 export { RedactedMode } from './redacted-mode'
 export { CrtMode } from './crt-mode'
-export { NeonMode } from './neon-mode'
 export { GlitchMode } from './glitch-mode'
 export { DvdMode } from './dvd-mode'
 export { BinaryMode } from './binary-mode'
-export { AuroraMode } from './aurora-mode'
 export { BeatSyncMode } from './beat-sync-mode'
 export { SettingsPanel } from './settings-panel'

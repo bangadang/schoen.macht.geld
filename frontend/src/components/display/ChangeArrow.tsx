@@ -11,7 +11,7 @@ interface ChangeArrowProps {
   /** Display variant: 'symbol' for ▲/▼, 'icon' for lucide icons */
   variant?: 'symbol' | 'icon';
   /** Icon/symbol size */
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   /** Show neutral indicator (─) for zero */
   showNeutral?: boolean;
   /** Additional CSS classes */

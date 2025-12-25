@@ -53,13 +53,19 @@ class Settings(BaseSettings):
     force_google_ai: bool = False  # Force use of Google AI instead of AtlasCloud
 
     # AI models (swap these to try different models)
+    # atlascloud_text_model: str = "google/gemini-3-flash-preview"
     atlascloud_text_model: str = "deepseek-ai/deepseek-v3.2"
-    atlascloud_image_model: str = "black-forest-labs/flux-schnell"
+    # atlascloud_image_model: str = "black-forest-labs/flux-schnell"
+    atlascloud_image_model: str = "black-forest-labs/flux-dev"
     atlascloud_video_t2v_model: str = "alibaba/wan-2.2/t2v-480p-ultra-fast"
     atlascloud_video_i2v_model: str = "alibaba/wan-2.2/i2v-480p-ultra-fast"
 
-    # AI settings
+    # AI generation parameters
     ai_text_max_tokens: int = 10000
+    ai_temperature: float = 0.85  # Creativity vs coherence (0.0-1.0)
+    ai_top_p: float = 0.9  # Nucleus sampling constraint
+    ai_frequency_penalty: float = 0.3  # Reduce repetitive phrases
+    ai_presence_penalty: float = 0.2  # Encourage topic variety
 
     # AI task processing
     ai_task_poll_interval: int = 10  # seconds between polling for AI task status

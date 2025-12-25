@@ -121,6 +121,7 @@ Visual overlays for market events:
 | Event | Description |
 |-------|-------------|
 | **Market Open** | Countdown ceremony when trading starts |
+| **Market Close** | End of trading day announcement |
 | **New Leader** | Celebration when #1 rank changes |
 | **All-Time High** | Alert when stock hits new peak |
 | **Big Crash** | Warning when stock drops below -10% |
@@ -151,19 +152,71 @@ The app includes toggleable visual effects for an enhanced viewing experience.
 | **Drunk Mode** | Wobble and blur effect (for after-hours trading) |
 | **Redacted Mode** | Black bars over "classified" data with TOP SECRET stamps |
 | **CRT Mode** | Retro CRT monitor effect with scan lines |
-| **Neon Mode** | Cyberpunk neon glow effects |
 | **Glitch Mode** | Digital glitch and distortion effects |
-| **Aurora Mode** | Northern lights background animation |
 | **DVD Mode** | Bouncing DVD logo screensaver |
 | **Binary Mode** | Binary code rain overlay |
+| **Beat Sync Mode** | Audio-reactive visuals synced to music |
 
 ### Usage
 
-- **Settings Panel**: Click the gear icon (bottom-right corner)
-- **Keyboard Shortcut**: `Ctrl/Cmd+Shift+E` to toggle settings panel
-- **Master Toggle**: "Disable All Effects" turns everything off
+- **Settings Panel**: Click the gear icon or press `F12`
+- **Master Toggle**: "Disable All Effects" or press `E`
 - Settings persist to localStorage
 - Effects auto-disable on server 500 errors
+
+## Keyboard Shortcuts
+
+Press `?` to show help overlay on display pages.
+
+### Display Views (F1-F8)
+
+| Key | View |
+|-----|------|
+| F1 | Bloomberg |
+| F2 | Market Map |
+| F3 | Terminal |
+| F4 | Leaderboard |
+| F5 | Stock Chart |
+| F6 | Performance Race |
+| F7 | IPO Spotlight |
+| F8 | Sector Sunburst |
+
+### Effects (Number Keys)
+
+| Key | Effect |
+|-----|--------|
+| 1 | Hacker Mode |
+| 2 | Drunk Mode |
+| 3 | CRT Mode |
+| 4 | Glitch Mode |
+| 5 | Redacted Mode |
+| 6 | Binary Mode |
+| 7 | DVD Mode |
+| 0 | Beat Sync Mode |
+
+### Settings
+
+| Key | Action |
+|-----|--------|
+| M | Toggle stock ticker |
+| N | Toggle news ticker |
+| K | Toggle kiosk mode |
+| B | Toggle boot animation |
+
+### Other
+
+| Key | Action |
+|-----|--------|
+| E | Disable all effects |
+| F12 | Toggle settings panel |
+| ? | Show help |
+
+### Swipe Interface
+
+| Key | Action |
+|-----|--------|
+| ← | Swipe left (dislike) |
+| → | Swipe right (like) |
 
 ### Files
 
@@ -181,15 +234,15 @@ src/
     │   ├── drunk-mode.tsx     # Wobble/blur
     │   ├── redacted-mode.tsx  # Black bars
     │   ├── crt-mode.tsx       # CRT monitor effect
-    │   ├── neon-mode.tsx      # Neon glow
     │   ├── glitch-mode.tsx    # Digital glitch
-    │   ├── aurora-mode.tsx    # Northern lights
     │   ├── dvd-mode.tsx       # DVD screensaver
     │   ├── binary-mode.tsx    # Binary rain
+    │   ├── beat-sync-mode.tsx # Audio-reactive visuals
     │   └── settings-panel.tsx # Toggle UI
     └── events/
         ├── index.tsx          # EventsLayer wrapper
         ├── market-open.tsx    # Market open ceremony
+        ├── market-close.tsx   # Market close announcement
         ├── new-leader-celebration.tsx # New #1 celebration
         ├── all-time-high.tsx  # Peak price alert
         └── big-crash.tsx      # Crash warning

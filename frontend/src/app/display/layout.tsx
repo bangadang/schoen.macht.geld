@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useEffects } from '@/contexts/effects-context';
+import { useMarket } from '@/contexts/market-context';
 import { StockMarquee, HeadlinesMarquee } from '@/components/marquee';
 import { MarketStatusBadge } from '@/components/display';
 import { UI_MESSAGES } from '@/constants/messages';
@@ -35,6 +36,7 @@ export default function DisplayLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { setSettingsPanelOpen, stockMarqueeEnabled, headlinesMarqueeEnabled, stockMarqueePosition, headlinesMarqueePosition, marqueeScrollSpeed, kioskMode, beatState } = useEffects();
+  const { marketState } = useMarket();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   // Determine the active tab from the URL path to highlight the correct tab.
@@ -66,16 +68,6 @@ export default function DisplayLayout({
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
-
-  // Simulated market status (open during weekdays 9-17:30)
-  const isMarketOpen = () => {
-    if (!currentTime) return false;
-    const day = currentTime.getDay();
-    const hour = currentTime.getHours();
-    const minute = currentTime.getMinutes();
-    const timeValue = hour * 60 + minute;
-    return day >= 1 && day <= 5 && timeValue >= 540 && timeValue <= 1050;
   };
 
   // Render marquees based on position settings
@@ -112,7 +104,7 @@ export default function DisplayLayout({
           </span>
         </Link>
         <div className="flex items-center gap-4 text-base text-muted-foreground">
-          <MarketStatusBadge isOpen={isMarketOpen()} />
+          <MarketStatusBadge isOpen={marketState.isOpen} />
           {beatState.status !== 'idle' && (
             <span className={`flex items-center gap-2 px-2 py-0.5 border ${
               beatState.status === 'synced'

@@ -42,18 +42,38 @@ STOCK_GENERATION_PROMPT = """Du bist ein kreativer Schreiber für das Zürcher P
 veranstaltet vom "Verein für ambitionierten Konsum (VAK)" im Club "Amphitheater".
 
 Generiere {count} einzigartige, fiktive "Party-Persönlichkeiten" als Aktien.
+
 Jede Person braucht:
-1. **ticker**: Genau 4 Grossbuchstaben (z.B. "DIAM", "KRYP", "NEON", "MARC")
-2. **title**: Ein kreativer Spitzname (z.B. "Diamond Hands AG", "Krypto-König-Kammeradschaft", "Inkasso Moskaug GmbH.", "Marc's Super Stock")
-3. **description**: Eine sarkastische Ich-Perspektive Beschreibung (max 500 Zeichen).
-   Themen: Zürcher Nachtleben, Konsum, Status, Exzesse, Finanzjargon gemischt mit Party-Slang.
-   Stil: Selbstverliebt, sarkastisch, satirisch, amüsierter/amüsanter Unterton. Potentiell etwas klamaukig.
+1. **ticker**: Genau 4 Grossbuchstaben, idealerweise ein Wortspiel oder Bezug zum Namen.
+   Beispiele: "COKE" für Schneewittchen, "FLEX" für Rolex-Rolf, "VIBE" für DJ Endorphin,
+   "NOSE" für Powder-Paula, "GOLD" für Champagner-Charlotte.
+2. **title**: Ein kreativer Aktientitel im Firmenformat.
+   Beispiele: "Diamond Hands AG", "Krypto-König GmbH", "Influencer-Insolvenz Inc.",
+   "Champagner-Charlotte Holdings", "DJ Endorphin Entertainment".
+3. **description**: Eine sarkastische Beschreibung (max 500 Zeichen).
+
+Regeln für Diversität:
+- **Archetypen mischen:** DJ, Influencer, Banker, Künstler, Dealer, Erbin, Promoter,
+  Model, Tech-Bro, Gastro-Besitzer, Türsteher, Stammgast, Newcomer.
+- **Geschlecht/Stil variieren:** Nicht alle gleich.
+- **Beschreibungsstile variieren:**
+  - Ich-Perspektive (prahlerisch)
+  - Corporate Mission Statement
+  - Investor Pitch (Q3 Highlights)
+  - Tagline (kurz, prägnant)
+
+Beispiele für Beschreibungen:
+- "Premium seit der Geburt. Exklusiv bis zum Blackout."
+- "Think different. Sniff different."
+- "Mission Statement: Wir maximieren hedonistische Rendite bei minimalem Verantwortungsbewusstsein."
+- "Kerngeschäft: strategische Präsenz an exklusiven Locations. Wettbewerbsvorteil: Ich kenne den Türsteher."
+- "Mein Portfolio besteht aus Vitamin K, fragwürdigen Entscheidungen und Menschen, die 'irgendwas mit Medien' machen."
 
 Die Ticker müssen alle unterschiedlich sein!
 
 Gib die Daten als JSON-Array aus:
 [
-  {{"ticker": "XXXX", "title": "Name-Name", "description": "Ich bin..."}},
+  {{"ticker": "XXXX", "title": "Name-Name", "description": "..."}},
   ...
 ]
 

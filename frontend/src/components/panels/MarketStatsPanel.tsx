@@ -5,6 +5,7 @@ import { useStocks } from '@/hooks/use-stocks';
 import {
   Panel,
   TickerSymbol,
+  StockTitle,
   StockPrice,
   PercentChange,
   StatBox,
@@ -19,6 +20,8 @@ interface MarketStatsPanelProps {
   className?: string;
   /** Whether to hide the panel header */
   hideHeader?: boolean;
+  /** Number of stocks to show per category */
+  stocksPerCategory?: number;
 }
 
 /**
@@ -28,19 +31,21 @@ export function MarketStatsPanel({
   compact = false,
   className,
   hideHeader = false,
+  stocksPerCategory = 3,
 }: MarketStatsPanelProps) {
   const { stocks, isLoading } = useStocks();
 
   const stats = useMemo(() => {
     if (stocks.length === 0) return null;
 
-    const highest = [...stocks].sort((a, b) => b.price - a.price)[0];
-    const lowest = [...stocks].sort((a, b) => a.price - b.price)[0];
-    const biggestMove = [...stocks].sort((a, b) => Math.abs(b.percent_change) - Math.abs(a.percent_change))[0];
-    const mostStable = [...stocks].sort((a, b) => Math.abs(a.percent_change) - Math.abs(b.percent_change))[0];
+    const count = Math.min(stocksPerCategory, stocks.length);
+    const highest = [...stocks].sort((a, b) => b.price - a.price).slice(0, count);
+    const lowest = [...stocks].sort((a, b) => a.price - b.price).slice(0, count);
+    const biggestMove = [...stocks].sort((a, b) => Math.abs(b.percent_change) - Math.abs(a.percent_change)).slice(0, count);
+    const mostStable = [...stocks].sort((a, b) => Math.abs(a.percent_change) - Math.abs(b.percent_change)).slice(0, count);
 
     return { highest, lowest, biggestMove, mostStable };
-  }, [stocks]);
+  }, [stocks, stocksPerCategory]);
 
   if (isLoading && stocks.length === 0) {
     return (
@@ -67,22 +72,58 @@ export function MarketStatsPanel({
       hideHeader={hideHeader}
       compact={compact}
     >
-      <div className="h-full p-2 grid grid-cols-2 gap-2 text-xs">
+      <div className="h-full p-2 grid grid-cols-2 gap-2 text-xs overflow-auto">
         <StatBox label={LABELS.highestPrice}>
-          <TickerSymbol ticker={stats.highest.ticker} size="xs" />
-          <StockPrice value={stats.highest.price} change={stats.highest.change} size="sm" glow />
+          {stats.highest.map((stock, i) => (
+            <div key={stock.ticker} className={i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  <TickerSymbol ticker={stock.ticker} size="xs" />
+                  <StockTitle title={stock.title} size="xs" className="text-muted-foreground truncate" />
+                </div>
+                <StockPrice value={stock.price} change={stock.change} size="xs" glow={i === 0} />
+              </div>
+            </div>
+          ))}
         </StatBox>
         <StatBox label={LABELS.lowestPrice}>
-          <TickerSymbol ticker={stats.lowest.ticker} size="xs" />
-          <StockPrice value={stats.lowest.price} change={stats.lowest.change} size="sm" glow />
+          {stats.lowest.map((stock, i) => (
+            <div key={stock.ticker} className={i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  <TickerSymbol ticker={stock.ticker} size="xs" />
+                  <StockTitle title={stock.title} size="xs" className="text-muted-foreground truncate" />
+                </div>
+                <StockPrice value={stock.price} change={stock.change} size="xs" glow={i === 0} />
+              </div>
+            </div>
+          ))}
         </StatBox>
         <StatBox label={LABELS.biggestMove}>
-          <TickerSymbol ticker={stats.biggestMove.ticker} size="xs" />
-          <PercentChange value={stats.biggestMove.percent_change} showArrow size="sm" />
+          {stats.biggestMove.map((stock, i) => (
+            <div key={stock.ticker} className={i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  <TickerSymbol ticker={stock.ticker} size="xs" />
+                  <StockTitle title={stock.title} size="xs" className="text-muted-foreground truncate" />
+                </div>
+                <PercentChange value={stock.percent_change} showArrow size="xs" />
+              </div>
+            </div>
+          ))}
         </StatBox>
         <StatBox label={LABELS.mostStable}>
-          <TickerSymbol ticker={stats.mostStable.ticker} size="xs" />
-          <PercentChange value={stats.mostStable.percent_change} showArrow size="sm" />
+          {stats.mostStable.map((stock, i) => (
+            <div key={stock.ticker} className={i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  <TickerSymbol ticker={stock.ticker} size="xs" />
+                  <StockTitle title={stock.title} size="xs" className="text-muted-foreground truncate" />
+                </div>
+                <PercentChange value={stock.percent_change} showArrow size="xs" />
+              </div>
+            </div>
+          ))}
         </StatBox>
       </div>
     </Panel>

@@ -28,6 +28,7 @@
 | Status | Feature | Priority | Notes |
 |--------|---------|----------|-------|
 | [x] | Terminal Boot | ⭐ | Fake POST/boot sequence on load. Plays on every page load. |
+| [x] | Beat Sync Mode | ⭐⭐ | Audio-reactive visuals synced to music via microphone input |
 | [x] | Matrix Mode | ⭐ | Green matrix symbols dropping from top with trace (via Hacker Mode) |
 | [ ] | Site Content Matrix | ⭐ | Letters from screen content used for matrix effect, spawned randomly (prefer top) |
 | [x] | DVD Logo Mode | ⭐ | Configurable text/image bouncing off screen edges |
@@ -51,6 +52,7 @@
 | [x]    | All-Time High | ⭐⭐ | Rocket launch or balloon rise animation |
 | [x]    | Big Crash | ⭐⭐ | Explosion particles + screen shake |
 | [x]    | Market Open | ⭐⭐ | Bell animation + flash |
+| [x]    | Market Close | ⭐⭐ | End of trading day announcement |
 
 ---
 
@@ -117,7 +119,7 @@
 
 ## Implementation Notes
 
-- All visual effects are toggleable via a settings panel (gear icon, bottom-right) or `Ctrl/Cmd+Shift+E`
+- All visual effects are toggleable via settings panel (gear icon or `F12`) or number keys `1-9, 0`
 - Settings persist to localStorage
 - Effects auto-disable on server 500 errors
 - Consider performance on Raspberry Pi Zero 2 W for heavier effects
@@ -161,7 +163,7 @@
 - `EffectsProvider` wraps app
 - `EffectsLayer` renders all effect components
 - Settings panel with individual toggles + master disable
-- Keyboard shortcut: `Ctrl/Cmd+Shift+E`
+- Keyboard shortcuts: `F12` for settings, `1-9, 0` for effects, `E` to disable all, `?` for help
 - Auto-reset on 500 server errors
 
 ### Event Animations Infrastructure
@@ -233,3 +235,10 @@
 - Blurred for soft effect
 - Slow undulating motion
 - Purple, cyan, green color palette
+
+### Beat Sync Mode
+- Audio-reactive visuals via microphone input
+- Frequency analysis for bass/mid/treble detection
+- Visual elements pulse and scale with audio
+- Color shifts based on audio intensity
+- Configurable sensitivity

@@ -41,7 +41,7 @@ export function PercentChange({
 
   if (flash && trackingKey) {
     return (
-      <span className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
+      <span data-percent-change className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
         {arrow && <span className="mr-1">{arrow}</span>}
         <FlashValue
           value={value}
@@ -53,7 +53,7 @@ export function PercentChange({
   }
 
   return (
-    <span className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
+    <span data-percent-change className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
       {arrow && <span className="mr-1">{arrow}</span>}
       {formatPercent(value, showSign, decimals)}
     </span>

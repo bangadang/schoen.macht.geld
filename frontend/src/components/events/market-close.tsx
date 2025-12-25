@@ -6,6 +6,9 @@ import { Moon } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
 import { TIMINGS } from '@/constants/timings';
 import { EVENT_MESSAGES } from '@/constants/messages';
+import { StockTitle } from '@/components/display/StockTitle';
+import { PercentChange } from '@/components/display/PercentChange';
+import { StockImage } from '@/components/display/StockImage';
 
 interface MarketCloseProps {
   event: StockEvent;
@@ -15,7 +18,7 @@ interface MarketCloseProps {
 export function MarketClose({ event, onComplete }: MarketCloseProps) {
   const [phase, setPhase] = useState<'flash' | 'moon' | 'text' | 'exit'>('flash');
   const marketDay = event.metadata?.marketDay ?? 1;
-  const leader = event.stock;
+  const topMover = event.stock;
   const duration = TIMINGS.eventMarketClose;
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
           initial={{ opacity: 1 }}
           animate={{ opacity: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="absolute inset-0 bg-indigo-900"
+          className="absolute inset-0 bg-slate-800"
         />
 
         {/* Dark overlay */}
@@ -78,7 +81,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1.5, opacity: 0.3 }}
           transition={{ duration: 1, delay: 0.5 }}
-          className="absolute w-96 h-96 rounded-full bg-gradient-radial from-indigo-500/40 via-indigo-600/10 to-transparent"
+          className="absolute w-96 h-96 rounded-full bg-gradient-radial from-slate-500/40 via-slate-600/10 to-transparent"
         />
 
         {/* Moon container */}
@@ -96,15 +99,15 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
           <motion.div
             animate={{
               filter: [
-                'drop-shadow(0 0 20px rgba(99, 102, 241, 0.5))',
-                'drop-shadow(0 0 40px rgba(99, 102, 241, 0.7))',
-                'drop-shadow(0 0 20px rgba(99, 102, 241, 0.5))',
+                'drop-shadow(0 0 20px rgba(148, 163, 184, 0.5))',
+                'drop-shadow(0 0 40px rgba(148, 163, 184, 0.7))',
+                'drop-shadow(0 0 20px rgba(148, 163, 184, 0.5))',
               ],
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
             <Moon
-              className="w-32 h-32 text-indigo-300"
+              className="w-32 h-32 text-slate-300"
               strokeWidth={1.5}
               fill="currentColor"
             />
@@ -121,8 +124,7 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
             className="mt-8 text-center"
           >
             <motion.h1
-              className="text-5xl font-bold text-indigo-300 tracking-wider"
-              style={{ textShadow: '0 0 30px rgba(99, 102, 241, 0.6)' }}
+              className="text-5xl font-bold text-slate-300 tracking-wider drop-shadow-[0_0_30px_rgba(148,163,184,0.6)]"
             >
               {EVENT_MESSAGES.market.closed}
             </motion.h1>
@@ -130,19 +132,42 @@ export function MarketClose({ event, onComplete }: MarketCloseProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="mt-4 text-xl text-indigo-200/80"
+              className="mt-4 text-xl text-slate-200/80"
             >
               {EVENT_MESSAGES.market.tradingDay} {marketDay} {EVENT_MESSAGES.market.dayEnded}
             </motion.p>
-            {leader && (
-              <motion.p
+            {topMover && (
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.2 }}
-                className="mt-2 text-lg text-indigo-200/60"
+                className="mt-6 flex flex-col items-center gap-3"
               >
-                {EVENT_MESSAGES.market.dayWinner}: {leader.name}
-              </motion.p>
+                <span className="text-sm text-slate-400 uppercase tracking-wider">
+                  {EVENT_MESSAGES.market.dayWinner}
+                </span>
+                <StockImage
+                  src={topMover.image}
+                  alt={topMover.title}
+                  ticker={topMover.ticker}
+                  size="lg"
+                  className="border-slate-300"
+                />
+                <div className="flex flex-col items-center gap-1">
+                  <StockTitle
+                    title={topMover.title}
+                    size="xl"
+                    truncate={false}
+                    className="text-slate-200"
+                  />
+                  <PercentChange
+                    value={topMover.percent_change ?? 0}
+                    size="xl"
+                    showSign
+                    showArrow
+                  />
+                </div>
+              </motion.div>
             )}
           </motion.div>
         </motion.div>

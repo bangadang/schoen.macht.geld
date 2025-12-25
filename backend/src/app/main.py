@@ -14,7 +14,7 @@ from app.config import settings
 from app.database import async_session_maker, engine, init_db
 from app.logger import init_logging
 from app.middleware import TimingMiddleware
-from app.routers import ai, screenshot, stocks, swipe
+from app.routers import ai, market, screenshot, stocks, swipe
 from app.scheduler import (
     AI_IMAGE_DIR,
     AI_VIDEO_DIR,
@@ -93,6 +93,7 @@ app.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
 app.include_router(swipe.router, prefix="/swipe", tags=["swipe"])
 app.include_router(ai.router, prefix="/ai", tags=["ai"])
 app.include_router(screenshot.router, prefix="/screenshot", tags=["screenshot"])
+app.include_router(market.router, prefix="/market", tags=["market"])
 
 # Serve uploaded images
 app.mount("/static", StaticFiles(directory=settings.static_dir), name="data")

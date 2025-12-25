@@ -59,7 +59,7 @@ const CustomizedContent = (props: any) => {
           opacity: 0.9,
         }}
       />
-      <foreignObject x={x + 2} y={y + 2} width={width - 4} height={height - 4}>
+      <foreignObject x={x} y={y} width={width} height={height}>
         <div
           style={{
             width: '100%',
@@ -68,9 +68,10 @@ const CustomizedContent = (props: any) => {
             flexDirection: 'column',
             justifyContent: 'space-between',
             color: 'white',
-            padding: compact ? '2px' : '4px',
+            padding: compact ? '4px' : '6px',
             fontFamily: 'var(--font-body), monospace',
             textTransform: 'uppercase',
+            boxSizing: 'border-box',
           }}
         >
           <div>

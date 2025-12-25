@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useEffects } from '@/contexts/effects-context'
 
 const BOOT_LINES = [
@@ -33,20 +33,28 @@ const BOOT_LINES = [
 const TOTAL_DURATION = 4500
 
 export function TerminalBoot() {
-  const { bootComplete, setBootComplete, isEffectEnabled } = useEffects()
+  const { bootComplete, setBootComplete, isEffectEnabled, hydrated } = useEffects()
   const [visibleLines, setVisibleLines] = useState<string[]>([])
   const [fadeOut, setFadeOut] = useState(false)
+  const hasStartedRef = useRef(false)
 
   const isEnabled = isEffectEnabled('boot')
 
   useEffect(() => {
-    if (bootComplete || !isEnabled) {
-      // If boot is disabled, mark as complete immediately
-      if (!isEnabled && !bootComplete) {
-        setBootComplete(true)
-      }
+    // Wait for localStorage to be loaded before deciding
+    if (!hydrated) return
+
+    // Once animation has started, don't abort even if isEnabled changes
+    if (bootComplete) return
+
+    // If boot is disabled and we haven't started yet, skip
+    if (!isEnabled && !hasStartedRef.current) {
+      setBootComplete(true)
       return
     }
+
+    // Mark as started so we don't abort if isEnabled changes during animation
+    hasStartedRef.current = true
 
     const timers: NodeJS.Timeout[] = []
 
@@ -70,9 +78,9 @@ export function TerminalBoot() {
     timers.push(completeTimer)
 
     return () => timers.forEach(clearTimeout)
-  }, [bootComplete, setBootComplete, isEnabled])
+  }, [hydrated, bootComplete, setBootComplete, isEnabled])
 
-  if (bootComplete || !isEnabled) return null
+  if (bootComplete) return null
 
   return (
     <div

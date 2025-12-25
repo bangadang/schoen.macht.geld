@@ -54,7 +54,7 @@ export function StockPrice({
 
   if (flash && trackingKey) {
     return (
-      <span className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
+      <span data-price className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
         <FlashValue
           value={value}
           trackingKey={trackingKey}
@@ -69,7 +69,7 @@ export function StockPrice({
   }
 
   return (
-    <span className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
+    <span data-price className={cn('font-bold', TEXT_SIZES[size], colorClass, className)}>
       {content}
     </span>
   );

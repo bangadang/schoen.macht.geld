@@ -66,6 +66,7 @@ export const CHART_THEME = {
 
 // Icon size mappings (for lucide icons and similar)
 export const ICON_SIZES = {
+  xs: 'w-2.5 h-2.5',
   sm: 'w-3 h-3',
   md: 'w-4 h-4',
   lg: 'w-5 h-5',
@@ -73,6 +74,7 @@ export const ICON_SIZES = {
 
 // Symbol text size mappings (for text-based icons like arrows)
 export const SYMBOL_SIZES = {
+  xs: 'text-[10px]',
   sm: 'text-xs',
   md: 'text-sm',
   lg: 'text-base',
