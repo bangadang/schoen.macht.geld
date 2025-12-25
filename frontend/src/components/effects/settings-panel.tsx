@@ -21,14 +21,6 @@ interface EffectOption {
   description: string
 }
 
-const STARTUP_EFFECTS: EffectOption[] = [
-  {
-    id: 'boot',
-    label: 'Terminal Boot',
-    description: 'Fake boot sequence on page load',
-  },
-]
-
 const VISUAL_MODES: EffectOption[] = [
   {
     id: 'hacker',
@@ -129,18 +121,33 @@ export function SettingsPanel() {
           </SheetHeader>
 
           <div className="mt-6 space-y-6 flex-1 overflow-y-auto pr-2">
-            {/* Event Animations - separate section */}
+            {/* Animations section */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Event Animations
+                Animations
               </h4>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="events" className="text-base">
-                    Enable Events
+                  <Label htmlFor="boot" className="text-base">
+                    Terminal Boot
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Celebrate new #1, all-time highs, crashes
+                    Fake boot sequence on page load
+                  </p>
+                </div>
+                <Switch
+                  id="boot"
+                  checked={enabledEffects.has('boot')}
+                  onCheckedChange={() => toggleEffect('boot')}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="events" className="text-base">
+                    Event Celebrations
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    New #1, all-time highs, crashes
                   </p>
                 </div>
                 <Switch
@@ -168,19 +175,8 @@ export function SettingsPanel() {
               </Button>
             </div>
 
-            {/* Startup effects */}
-            <div className="space-y-4">
-              <h5 className="text-xs font-medium text-muted-foreground">
-                Startup
-              </h5>
-              {STARTUP_EFFECTS.map(renderEffectToggle)}
-            </div>
-
             {/* Visual modes */}
             <div className="space-y-4">
-              <h5 className="text-xs font-medium text-muted-foreground">
-                Visual Modes
-              </h5>
               {VISUAL_MODES.map(renderEffectToggle)}
             </div>
 
