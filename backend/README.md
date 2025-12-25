@@ -38,7 +38,7 @@ src/app/
 └── services/         # External services (AtlasCloud, Google AI)
 data/
 ├── stocks.db         # SQLite database (auto-created)
-└── images/           # Uploaded stock images
+└── static/           # Static files (images, videos)
 ```
 
 ## Data Models
@@ -49,7 +49,7 @@ data/
 |-------|------|-------------|
 | ticker | str | Primary key (e.g. "APPL") |
 | title | str | Display name |
-| image | str? | Image path (served at `/images/`) |
+| image | str? | Image path (served at `/static/`) |
 | description | str | Profile description |
 | is_active | bool | Whether stock is tradeable |
 | price | float | Current price |
@@ -90,7 +90,7 @@ Full interactive docs at `/docs` (Swagger UI).
 | POST | /stocks/ | Create stock |
 | GET | /stocks/{ticker} | Get stock by ticker |
 | POST | /stocks/{ticker}/image | Upload stock image |
-| POST | /stocks/{ticker}/price | Adjust price (admin) |
+| POST | /stocks/{ticker}/price | Set price (admin) |
 | GET | /stocks/{ticker}/snapshots | Price history |
 | GET | /stocks/{ticker}/events | Price change log |
 | POST | /swipe/ | Record swipe vote |
@@ -115,8 +115,8 @@ Full interactive docs at `/docs` (Swagger UI).
 ```bash
 # Without image
 curl -X POST http://localhost:8000/stocks/ \
-  -H "Content-Type: application/json" \
-  -d '{"ticker": "TEST", "title": "Test Stock"}'
+  -F 'ticker=TEST' \
+  -F 'title=Test Stock'
 
 # With image
 curl -X POST http://localhost:8000/stocks/ \
@@ -132,12 +132,10 @@ curl -X POST http://localhost:8000/stocks/TEST/image \
   -F 'image=@photo.jpg'
 ```
 
-**Adjust price:**
+**Set price:**
 
 ```bash
-curl -X POST http://localhost:8000/stocks/TEST/price \
-  -H "Content-Type: application/json" \
-  -d '{"delta": 50.0, "change_type": "admin"}'
+curl -X POST "http://localhost:8000/stocks/TEST/price?price=1050.0"
 ```
 
 **Submit swipe:**
@@ -255,11 +253,11 @@ All settings via environment variables or `.env` file.
 | SNAPSHOT_INTERVAL | 60 | Seconds between snapshots |
 | SNAPSHOT_RETENTION | 30 | Snapshots to keep per stock |
 
-### Images
+### Static Files
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| STATIC_DIR | ./data | Storage path |
+| STATIC_DIR | ./data/static | Storage path |
 | MAX_IMAGE_SIZE | 20971520 | Max upload size (bytes) |
 | IMAGE_MAX_DIMENSION | 1920 | Max width/height |
 | IMAGE_QUALITY | 85 | JPEG quality (1-100) |
@@ -273,6 +271,7 @@ All settings via environment variables or `.env` file.
 | ATLASCLOUD_IMAGE_MODEL | black-forest-labs/flux-schnell | Image model |
 | GOOGLE_AI_API_KEY | | Fallback for text |
 | FORCE_GOOGLE_AI | false | Always use Google AI |
+| AI_TEXT_MAX_TOKENS | 10000 | Max tokens for text generation |
 
 ### Swipe
 

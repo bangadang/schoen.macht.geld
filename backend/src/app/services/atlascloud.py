@@ -4,6 +4,7 @@ import time
 from typing import Any
 
 import httpx
+from httpx import Response
 from loguru import logger
 from tenacity import (
     retry,
@@ -74,7 +75,9 @@ class AtlasCloudClient:
     def __init__(self) -> None:
         self.base_url: str = settings.atlascloud_base_url.rstrip("/")
         self.api_key: str = settings.atlascloud_api_key
-        self.circuit_breaker = CircuitBreaker(failure_threshold=5, reset_timeout=60.0)
+        self.circuit_breaker: CircuitBreaker = CircuitBreaker(
+            failure_threshold=5, reset_timeout=60.0
+        )
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -93,7 +96,7 @@ class AtlasCloudClient:
         method: str,
         endpoint: str,
         **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
-    ) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+    ) -> Response:
         """Make an API request with retry logic and circuit breaker."""
         # Check circuit breaker
         if not self.circuit_breaker.allow_request():
@@ -135,7 +138,7 @@ class AtlasCloudClient:
                     )
 
                 self.circuit_breaker.record_success()
-                return response.json()  # pyright: ignore[reportAny]
+                return response
 
         except httpx.TimeoutException as e:
             self.circuit_breaker.record_failure()
@@ -150,11 +153,12 @@ class AtlasCloudClient:
     async def generate_text(
         self,
         prompt: str,
-        model: str | None = None,
         max_tokens: int = 500,
-    ) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+        model: str | None = None,
+    ) -> str:
         """Generate text using chat completion API."""
         model = model or settings.atlascloud_text_model
+        max_tokens = min(settings.ai_text_max_tokens, max_tokens)
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
@@ -163,30 +167,57 @@ class AtlasCloudClient:
             "stream": False,
         }
         logger.debug(f"Generating text with model {model}")
-        return await self._request("POST", "/v1/chat/completions", json=payload)
+        resp = await self._request("POST", "/v1/chat/completions", json=payload)
+        _ = resp.raise_for_status()
+        data = resp.json()  # pyright: ignore[reportAny]
+        text = data.get("choices", [{}])[0].get("message", {}).get("content")  # pyright: ignore[reportAny]
+        if not text:
+            raise AtlasCloudError(
+                'Chat API error: $resp["choices"][0]["message"]["content"] = None, '
+                + f"{data!r}"
+            )
+        return str(text)  # pyright: ignore[reportAny]
 
     async def generate_image(
-        self, prompt: str, model: str | None = None, size: str = "1024x1024"
-    ) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
-        """Start image generation. Returns task info with ID for polling."""
+        self,
+        prompt: str,
+        width: int = 1024,
+        height: int = 1024,
+        model: str | None = None,
+    ) -> str:
+        """Start image generation. Returns task ID for polling."""
         model = model or settings.atlascloud_image_model
+        width = min(4096, max(0, width))  # Clamp height to [0, 4096]
+        height = min(4096, max(0, height))  # Clamp height to [0, 4096]
+        size = f"{width}x{height}"
         payload = {
             "model": model,
             "prompt": prompt,
             "size": size,
         }
         logger.debug(f"Starting image generation with model {model}")
-        return await self._request("POST", "/api/v1/model/generateImage", json=payload)
+        resp = await self._request("POST", "/api/v1/model/generateImage", json=payload)
+        data = resp.json()  # pyright: ignore[reportAny]
+        text = data.get("data", {}).get("id")  # pyright: ignore[reportAny]
+        if not text:
+            raise AtlasCloudError(
+                f'Video API error: $resp["data"]["id"] = None, {data!r}'
+            )
+        return str(text)  # pyright: ignore[reportAny]
 
     async def generate_video_from_text(
         self,
         prompt: str,
-        model: str | None = None,
+        width: int = 832,
+        height: int = 480,
         duration: int = 5,
-        size: str = "832*480",
-    ) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
-        """Start video generation from text. Returns task info with ID for polling."""
+        model: str | None = None,
+    ) -> str:
+        """Start video generation from text. Returns task ID for polling."""
         model = model or settings.atlascloud_video_t2v_model
+        width = min(4096, max(0, width))  # Clamp height to [0, 4096]
+        height = min(4096, max(0, height))  # Clamp height to [0, 4096]
+        size = f"{width}x{height}"
         payload = {
             "model": model,
             "prompt": prompt,
@@ -194,7 +225,14 @@ class AtlasCloudClient:
             "size": size,
         }
         logger.debug(f"Starting text-to-video generation with model {model}")
-        return await self._request("POST", "/api/v1/model/generateVideo", json=payload)
+        resp = await self._request("POST", "/api/v1/model/generateVideo", json=payload)
+        data = resp.json()  # pyright: ignore[reportAny]
+        text = data.get("data", {}).get("id")  # pyright: ignore[reportAny]
+        if not text:
+            raise AtlasCloudError(
+                f'Text2Video API error: $resp["data"]["id"] = None, {data!r}'
+            )
+        return str(text)  # pyright: ignore[reportAny]
 
     async def generate_video_from_image(
         self,
@@ -203,7 +241,7 @@ class AtlasCloudClient:
         model: str | None = None,
         duration: int = 5,
         size: str = "832*480",
-    ) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+    ) -> str:
         """Start video generation from image. Returns task info with ID for polling."""
         model = model or settings.atlascloud_video_i2v_model
         payload = {
@@ -213,13 +251,28 @@ class AtlasCloudClient:
             "duration": duration,
             "size": size,
         }
-        logger.debug(f"Starting image-to-video generation with model {model}")
-        return await self._request("POST", "/api/v1/model/generateVideo", json=payload)
+        logger.debug("Starting image-to-video generation with model {}", model)
+        resp = await self._request("POST", "/api/v1/model/generateVideo", json=payload)
+        data = resp.json()  # pyright: ignore[reportAny]
+        text = data.get("data", {}).get("id")  # pyright: ignore[reportAny]
+        if not text:
+            raise AtlasCloudError(
+                f'Image2Video API error: $resp["data"]["id"] = None, {data!r}'
+            )
+        return str(text)  # pyright: ignore[reportAny]
 
-    async def get_task_status(self, task_id: str) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+    async def get_task_status(
+        self, task_id: str
+    ) -> tuple[str | None, list[str] | None, str | None]:
         """Get the status of an async generation task."""
         logger.debug(f"Polling task status for {task_id}")
-        return await self._request("GET", f"/api/v1/model/prediction/{task_id}")
+        resp = await self._request("GET", f"/api/v1/model/prediction/{task_id}")
+        data = resp.json().get("data", {})  # pyright: ignore[reportAny]
+        return (
+            str(data.get("status", "")).lower(),  # pyright: ignore[reportAny]
+            data.get("outputs"),  # pyright: ignore[reportAny]
+            data.get("error"),  # pyright: ignore[reportAny]
+        )
 
     async def download_file(self, url: str) -> bytes:
         """Download a file from a URL (for generated images/videos)."""

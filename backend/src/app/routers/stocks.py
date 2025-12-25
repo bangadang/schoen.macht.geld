@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Form, HTTPException, Query, UploadFile
 from loguru import logger
 from sqlalchemy import func
 from sqlmodel import col, select
@@ -16,13 +16,7 @@ from app.models.stock import (
     StockSnapshot,
     limit_price_events,
 )
-from app.schemas.stock import (
-    PriceEventResponse,
-    StockImageUpdate,
-    StockPriceUpdate,
-    StockResponse,
-    StockSnapshotResponse,
-)
+from app.schemas.stock import PriceEventResponse, StockResponse, StockSnapshotResponse
 from app.storage import cleanup_old_image, process_image, validate_image
 
 router = APIRouter()
@@ -53,7 +47,7 @@ async def create_stock(
     description: Annotated[str, Form()] = "",
     initial_price: Annotated[float | None, Form()] = None,
     session: AsyncSession = Depends(get_session),
-    image: StockImageUpdate | None = None,
+    image: UploadFile | None = None,
 ) -> StockResponse:
     """Create a new stock."""
     ticker = ticker.upper().strip()
@@ -118,7 +112,7 @@ async def get_stock(
 @router.post("/{ticker}/image")
 async def upload_stock_image(
     ticker: str,
-    image: StockImageUpdate,
+    image: UploadFile,
     session: AsyncSession = Depends(get_session),
 ) -> StockResponse:
     """Upload and store stock image locally."""
@@ -155,7 +149,7 @@ async def upload_stock_image(
 @router.post("/{ticker}/price")
 async def update_stock_price(
     ticker: str,
-    request: StockPriceUpdate,
+    price: Annotated[float, Body()],
     session: AsyncSession = Depends(get_session),
 ) -> StockResponse:
     """Manipulate stock price."""
@@ -165,13 +159,13 @@ async def update_stock_price(
         raise HTTPException(status_code=404, detail="Stock not found")
 
     # Calculate new price (enforce >= 0)
-    new_price = max(0.0, stock.price + request.delta)
+    new_price = max(0.0, price)
 
     # Create price event
     price_event = PriceEvent(
         ticker=ticker,
         price=new_price,
-        change_type=request.change_type,
+        change_type=ChangeType.ADMIN,
     )
     session.add(price_event)
 
@@ -181,10 +175,8 @@ async def update_stock_price(
     await session.refresh(stock)
 
     logger.debug(
-        "{} price {} by {:.2f} -> {:.2f}",
+        "{} price -> {:.2f}",
         ticker,
-        request.change_type.value,
-        request.delta,
         new_price,
     )
     return StockResponse.model_validate(stock)
@@ -196,7 +188,7 @@ async def get_stock_snapshots(
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
     session: AsyncSession = Depends(get_session),
 ) -> list[StockSnapshotResponse]:
-    """Get price snapshots for graphing."""
+    """Get stock price snapshots for graphing."""
     stock = await session.get(Stock, ticker)
     if not stock:
         logger.warning("Stock not found: {}", ticker)

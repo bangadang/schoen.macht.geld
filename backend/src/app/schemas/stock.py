@@ -90,22 +90,6 @@ class StockResponse(BaseModel):
         return (self.change / self.initial_price) * 100
 
 
-class StockCreate(BaseModel):
-    """Schema for creating a stock."""
-
-    ticker: str
-    title: str
-    description: str = ""
-    initial_price: float = settings.stock_base_price
-
-
-class StockPriceUpdate(BaseModel):
-    """Schema for manipulating stock price."""
-
-    delta: float
-    change_type: ChangeType = ChangeType.ADMIN
-
-
 class StockImageUpdate(UploadFile):
     pass
 
@@ -117,18 +101,10 @@ class SwipeDirection(str, Enum):
     RIGHT = "right"
 
 
-class SwipeRequest(BaseModel):
-    """Schema for a swipe action."""
-
-    ticker: str
-    direction: SwipeDirection
-    swipe_token: str | None = None  # Token from previous swipe response
-
-
 class SwipeResponse(BaseModel):
     """Response after a swipe action."""
 
     ticker: str
     new_price: float
     delta: float  # actual change applied
-    swipe_token: str  # token for next request
+    token: str  # token for next request

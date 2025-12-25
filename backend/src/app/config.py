@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     atlascloud_video_t2v_model: str = "alibaba/wan-2.2/t2v-480p-ultra-fast"
     atlascloud_video_i2v_model: str = "alibaba/wan-2.2/i2v-480p-ultra-fast"
 
+    # AI settings
+    ai_text_max_tokens: int = 10000
+
     # AI task processing
     ai_task_poll_interval: int = 10  # seconds between polling for AI task status
     ai_task_timeout: int = 300  # max seconds to wait for AI task completion

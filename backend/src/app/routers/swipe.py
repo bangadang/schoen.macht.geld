@@ -7,7 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.database import get_session
 from app.models.stock import ChangeType, PriceEvent, Stock
-from app.schemas.stock import SwipeDirection, SwipeRequest, SwipeResponse
+from app.schemas.stock import SwipeDirection, SwipeResponse
 from app.swipe_token import SwipeToken, calculate_price_delta
 
 router = APIRouter()
@@ -27,7 +27,10 @@ def _get_ticker_lock(ticker: str) -> asyncio.Lock:
 
 @router.post("/")
 async def swipe(
-    request: SwipeRequest, session: AsyncSession = Depends(get_session)
+    ticker: str,
+    direction: SwipeDirection,
+    token: str | None = None,
+    session: AsyncSession = Depends(get_session),
 ) -> SwipeResponse:
     """Record a swipe and update stock value.
 
@@ -35,23 +38,23 @@ async def swipe(
     swipe the same stock simultaneously.
     """
     # Decode/create swipe token and update with this swipe (outside lock, no DB)
-    token = SwipeToken.decode(request.swipe_token)
-    token.update(request.direction)
-    stats = token.analyze()
+    tok = SwipeToken.decode(token)
+    tok.update(direction)
+    stats = tok.analyze()
 
     # Acquire lock for this ticker to serialize concurrent swipes on same stock
-    lock = _get_ticker_lock(request.ticker)
+    lock = _get_ticker_lock(ticker)
     async with lock:
         # Read stock inside lock to get current price
-        stock = await session.get(Stock, request.ticker)
+        stock = await session.get(Stock, ticker)
         if not stock:
-            logger.warning("Swipe on unknown ticker: {}", request.ticker)
+            logger.warning("Swipe on unknown ticker: {}", ticker)
             raise HTTPException(status_code=404, detail="Stock not found")
 
         ticker = stock.ticker
 
         # Calculate price delta based on direction and user stats
-        delta = calculate_price_delta(stock.price, request.direction, stats)
+        delta = calculate_price_delta(stock.price, direction, stats)
 
         # Calculate new price (enforce >= 0)
         new_price = max(0.0, stock.price + delta)
@@ -59,7 +62,7 @@ async def swipe(
         # Determine change type
         change_type = (
             ChangeType.SWIPE_UP
-            if request.direction == SwipeDirection.RIGHT
+            if direction == SwipeDirection.RIGHT
             else ChangeType.SWIPE_DOWN
         )
 
@@ -77,8 +80,8 @@ async def swipe(
 
         logger.debug(
             "{} {} -> {:.2f} (delta: {:.2f}, streak: {}, pickiness: {:.2f})",
-            request.ticker,
-            request.direction.value,
+            ticker,
+            direction.value,
             new_price,
             delta,
             stats.streak_length,
@@ -89,5 +92,5 @@ async def swipe(
             ticker=ticker,
             new_price=new_price,
             delta=delta,
-            swipe_token=token.encode(),
+            token=tok.encode(),
         )

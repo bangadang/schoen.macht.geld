@@ -1,7 +1,6 @@
 import random
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from apscheduler.schedulers.asyncio import (  # pyright: ignore[reportMissingTypeStubs]
     AsyncIOScheduler,
@@ -224,13 +223,11 @@ async def process_ai_tasks() -> None:
         await session.commit()
 
 
-async def _generate_text_with_fallback(
-    prompt: str, model: str | None = None
-) -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
+async def _generate_text_with_fallback(prompt: str, model: str | None = None) -> str:
     """Generate text using AtlasCloud with Google AI fallback.
 
     If force_google_ai is set, uses Google AI directly.
-    Otherwise tries AtlasCloud first, falls back to Google AI on failure.
+    Otherwise, tries AtlasCloud first, falls back to Google AI on failure.
     """
     # Force Google AI if configured
     if settings.force_google_ai:
@@ -241,7 +238,7 @@ async def _generate_text_with_fallback(
 
     # Try AtlasCloud first
     try:
-        return await atlascloud.generate_text(prompt, model)
+        return await atlascloud.generate_text(prompt, model=model)
     except (AtlasCloudError, AtlasCloudTransientError) as e:
         # Fallback to Google AI if available
         if not settings.google_ai_api_key:
@@ -257,32 +254,29 @@ async def _submit_task(task: AITask, session: AsyncSession) -> None:
 
     if task.task_type == TaskType.DESCRIPTION:
         # Text generation is synchronous (fast)
-        response = await _generate_text_with_fallback(task.prompt, task.model)
-        # Extract text from chat completion response
-        content = response.get("choices", [{}])[0].get("message", {}).get("content", "")  # pyright: ignore[reportAny]
-        task.result = content.strip()  # pyright: ignore[reportAny]
+        content = await _generate_text_with_fallback(task.prompt, task.model)
+        task.result = content.strip()
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.now(UTC)
         logger.info("Completed text task {}", task.id)
 
     elif task.task_type == TaskType.IMAGE:
-        response = await atlascloud.generate_image(task.prompt, task.model)
-        data = response.get("data", {})  # pyright: ignore[reportAny]
-        task.atlascloud_id = data.get("id")  # pyright: ignore[reportAny]
+        task.atlascloud_id = await atlascloud.generate_image(
+            task.prompt, model=task.model, **task.arguments
+        )
         task.status = TaskStatus.PROCESSING
         logger.info(
             "Started image task {}, atlascloud_id={}", task.id, task.atlascloud_id
         )
 
     elif task.task_type == TaskType.VIDEO:
-        response = await atlascloud.generate_video_from_text(task.prompt, task.model)
-        data = response.get("data", {})  # pyright: ignore[reportAny]
-        task.atlascloud_id = data.get("id")  # pyright: ignore[reportAny]
+        task.atlascloud_id = await atlascloud.generate_video_from_text(
+            task.prompt, model=task.model, **task.arguments
+        )
         task.status = TaskStatus.PROCESSING
         logger.info(
             "Started video task {}, atlascloud_id={}", task.id, task.atlascloud_id
         )
-
     session.add(task)
 
 
@@ -309,22 +303,21 @@ async def _poll_task(task: AITask, session: AsyncSession) -> None:
         session.add(task)
         return
 
-    response = await atlascloud.get_task_status(task.atlascloud_id)
-    data = response.get("data", {})  # pyright: ignore[reportAny]
-    status = data.get("status", "").lower()  # pyright: ignore[reportAny]
+    status, outputs, error = await atlascloud.get_task_status(task.atlascloud_id)
 
     if status == "completed":
         # Download and save the result
-        output_urls = data.get("outputs", [])  # pyright: ignore[reportAny]
-        if output_urls:
-            await _download_result(task, output_urls[0])  # pyright: ignore[reportAny]
+        if outputs:
+            task.result = await _download_result(
+                task, outputs[0]
+            )  # TODO(mg): Add support for multiple outputs
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.now(UTC)
         logger.info("Task {} completed: {}", task.id, task.result)
 
     elif status == "failed":
         task.status = TaskStatus.FAILED
-        task.error = data.get("error", "Unknown error")  # pyright: ignore[reportAny]
+        task.error = error
         task.completed_at = datetime.now(UTC)
         logger.error("Task {} failed: {}", task.id, task.error)
 
@@ -333,7 +326,7 @@ async def _poll_task(task: AITask, session: AsyncSession) -> None:
     session.add(task)
 
 
-async def _download_result(task: AITask, url: str) -> None:
+async def _download_result(task: AITask, url: str) -> str | None:
     """Download generated media and save locally."""
     # Determine directory & file extension
     static_path = Path(settings.static_dir)
@@ -344,7 +337,7 @@ async def _download_result(task: AITask, url: str) -> None:
         ext = ".mp4"
         dl_path = static_path / AI_VIDEO_DIR
     else:
-        return
+        return None
 
     # Download file
     content = await atlascloud.download_file(url)
@@ -353,9 +346,8 @@ async def _download_result(task: AITask, url: str) -> None:
     filename = f"{task.id}{ext}"
     filepath = dl_path / filename
     _ = filepath.write_bytes(content)
-
-    task.result = str(filepath)
     logger.info("Downloaded {} to {}", task.task_type.value, filepath)
+    return str(filepath)
 
 
 def start_scheduler() -> None:
