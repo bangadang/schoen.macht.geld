@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
-import { StockImage, COLORS } from '@/components/display';
+import { StockImage, StockTitle, COLORS } from '@/components/display';
 import { TIMINGS } from '@/constants/timings';
 import { EVENT_MESSAGES } from '@/constants/messages';
 
@@ -149,7 +149,7 @@ export function NewLeaderCelebration({ event, onComplete }: NewLeaderCelebration
               </motion.div>
 
               {/* Stock info */}
-              <h2 className="text-3xl font-bold text-primary mb-1">{stock.title}</h2>
+              <StockTitle title={stock.title} size="3xl" truncate={false} className="font-bold text-primary block mb-1" />
               <p className="text-xl text-accent font-bold mb-4">{stock.ticker}</p>
 
               {/* Price display */}

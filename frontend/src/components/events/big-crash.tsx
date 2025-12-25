@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingDown, AlertTriangle, Flame } from 'lucide-react';
 import type { StockEvent } from '@/contexts/events-context';
-import { StockImage, COLORS } from '@/components/display';
+import { StockImage, StockTitle, COLORS } from '@/components/display';
 import { TIMINGS } from '@/constants/timings';
 import { EVENT_MESSAGES } from '@/constants/messages';
 
@@ -194,7 +194,7 @@ export function BigCrash({ event, onComplete }: BigCrashProps) {
               />
             </div>
 
-            <h2 className="text-2xl font-bold text-white mb-1">{stock.title}</h2>
+            <StockTitle title={stock.title} size="2xl" truncate={false} className="font-bold text-white block mb-1" />
             <p className="text-red-400 font-mono mb-4">{stock.ticker}</p>
 
             {/* Crash percentage - big and scary */}
