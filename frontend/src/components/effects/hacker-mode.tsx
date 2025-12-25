@@ -26,13 +26,19 @@ const TARGET_FPS = 20
 const FRAME_INTERVAL = 1000 / TARGET_FPS
 
 export function HackerMode() {
-  const { isEffectEnabled } = useEffects()
+  const { isEffectEnabled, getEffectIntensity } = useEffects()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const columnsRef = useRef<Column[]>([])
   const animationRef = useRef<number>()
   const lastFrameRef = useRef<number>(0)
 
   const isEnabled = isEffectEnabled('hacker')
+  const intensity = getEffectIntensity('hacker')
+
+  // Calculate effect values based on intensity (0-100)
+  const canvasOpacity = 0.1 + (intensity / 100) * 0.5 // 0.1 to 0.6
+  const speedMultiplier = 0.5 + (intensity / 100) * 1 // 0.5x to 1.5x
+  const tintOpacity = (intensity / 100) * 0.06 // 0 to 0.06
 
   useEffect(() => {
     if (!isEnabled) return
@@ -57,7 +63,7 @@ export function HackerMode() {
       columnsRef.current = Array.from({ length: columnCount }, (_, i) => ({
         x: i * columnSpacing,
         y: Math.random() * canvas.height,
-        speed: 3 + Math.random() * 3,
+        speed: (3 + Math.random() * 3) * speedMultiplier,
         chars: Array.from({ length: 8 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]),
       }))
     }
@@ -96,7 +102,7 @@ export function HackerMode() {
         // Reset column
         if (col.y - len * fontSize > canvas.height) {
           col.y = 0
-          col.speed = 3 + Math.random() * 3
+          col.speed = (3 + Math.random() * 3) * speedMultiplier
         }
 
         // Randomly change one character (less frequently)
@@ -116,7 +122,7 @@ export function HackerMode() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isEnabled])
+  }, [isEnabled, speedMultiplier])
 
   if (!isEnabled) return null
 
@@ -124,7 +130,8 @@ export function HackerMode() {
     <>
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 z-[1] pointer-events-none opacity-30"
+        className="fixed inset-0 z-[1] pointer-events-none"
+        style={{ opacity: canvasOpacity }}
       />
       {/* Scanlines - pure CSS, no performance impact */}
       <div
@@ -135,7 +142,7 @@ export function HackerMode() {
       />
       <div
         className="fixed inset-0 z-[3] pointer-events-none"
-        style={{ backgroundColor: 'rgba(0, 255, 65, 0.03)' }}
+        style={{ backgroundColor: `rgba(0, 255, 65, ${tintOpacity})` }}
       />
       <style jsx global>{`
         body.hacker-mode {

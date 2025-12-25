@@ -11,6 +11,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -67,6 +68,11 @@ const VISUAL_MODES: EffectOption[] = [
     label: 'Aurora Waves',
     description: 'Slow-moving northern lights gradients',
   },
+  {
+    id: 'beatSync',
+    label: 'Beat Sync',
+    description: 'Screen pulses to music via microphone',
+  },
 ]
 
 export function SettingsPanel() {
@@ -74,27 +80,51 @@ export function SettingsPanel() {
     enabledEffects,
     toggleEffect,
     disableAllEffects,
+    getEffectIntensity,
+    setEffectIntensity,
     settingsPanelOpen,
     setSettingsPanelOpen,
   } = useEffects()
 
   const { eventsEnabled, setEventsEnabled } = useEvents()
 
-  const renderEffectToggle = (effect: EffectOption) => (
-    <div key={effect.id} className="flex items-center justify-between">
-      <div>
-        <Label htmlFor={effect.id} className="text-base">
-          {effect.label}
-        </Label>
-        <p className="text-sm text-muted-foreground">{effect.description}</p>
+  const renderEffectToggle = (effect: EffectOption) => {
+    const isEnabled = enabledEffects.has(effect.id)
+    const intensity = getEffectIntensity(effect.id)
+
+    return (
+      <div key={effect.id} className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor={effect.id} className="text-base">
+              {effect.label}
+            </Label>
+            <p className="text-sm text-muted-foreground">{effect.description}</p>
+          </div>
+          <Switch
+            id={effect.id}
+            checked={isEnabled}
+            onCheckedChange={() => toggleEffect(effect.id)}
+          />
+        </div>
+        {isEnabled && (
+          <div className="flex items-center gap-3 pl-1">
+            <Slider
+              value={[intensity]}
+              onValueChange={([value]) => setEffectIntensity(effect.id, value)}
+              min={0}
+              max={100}
+              step={1}
+              className="flex-1"
+            />
+            <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">
+              {intensity}%
+            </span>
+          </div>
+        )}
       </div>
-      <Switch
-        id={effect.id}
-        checked={enabledEffects.has(effect.id)}
-        onCheckedChange={() => toggleEffect(effect.id)}
-      />
-    </div>
-  )
+    )
+  }
 
   return (
     <>

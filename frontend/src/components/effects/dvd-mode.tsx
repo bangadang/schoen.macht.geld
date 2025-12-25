@@ -5,19 +5,36 @@ import { useEffects } from '@/contexts/effects-context';
 
 const LOGO_WIDTH = 180;
 const LOGO_HEIGHT = 80;
-const SPEED = 2;
 
 /**
  * DVD Logo Mode - classic bouncing logo that changes color on edge hit
  */
 export function DvdMode() {
-  const { isEffectEnabled } = useEffects();
+  const { isEffectEnabled, getEffectIntensity } = useEffects();
   const [hue, setHue] = useState(0);
+
+  const isEnabled = isEffectEnabled('dvd');
+  const intensity = getEffectIntensity('dvd');
+
+  // Calculate effect values based on intensity (0-100)
+  const speed = 1 + (intensity / 100) * 3; // 1 to 4
+  const glowIntensity = 10 + (intensity / 100) * 30; // 10 to 40px
+  const logoOpacity = 0.6 + (intensity / 100) * 0.4; // 0.6 to 1.0
 
   // Use refs for animation state to avoid stale closures
   const positionRef = useRef({ x: 100, y: 100 });
-  const velocityRef = useRef({ x: SPEED, y: SPEED * 0.75 });
+  const velocityRef = useRef({ x: speed, y: speed * 0.75 });
   const logoRef = useRef<HTMLDivElement>(null);
+
+  // Update velocity when speed changes
+  useEffect(() => {
+    const currentVx = velocityRef.current.x;
+    const currentVy = velocityRef.current.y;
+    velocityRef.current = {
+      x: Math.sign(currentVx) * speed,
+      y: Math.sign(currentVy) * speed * 0.75,
+    };
+  }, [speed]);
 
   const animate = useCallback(() => {
     const logo = logoRef.current;
@@ -70,7 +87,7 @@ export function DvdMode() {
   }, []);
 
   useEffect(() => {
-    if (!isEffectEnabled('dvd')) return;
+    if (!isEnabled) return;
 
     let animationId: number;
 
@@ -82,9 +99,9 @@ export function DvdMode() {
     animationId = requestAnimationFrame(loop);
 
     return () => cancelAnimationFrame(animationId);
-  }, [isEffectEnabled, animate]);
+  }, [isEnabled, animate]);
 
-  if (!isEffectEnabled('dvd')) {
+  if (!isEnabled) {
     return null;
   }
 
@@ -96,16 +113,17 @@ export function DvdMode() {
         style={{
           width: LOGO_WIDTH,
           height: LOGO_HEIGHT,
+          opacity: logoOpacity,
           backgroundColor: 'rgba(0, 0, 0, 0.85)',
           border: `2px solid hsl(${hue}, 80%, 60%)`,
-          boxShadow: `0 0 20px hsla(${hue}, 100%, 50%, 0.5)`,
+          boxShadow: `0 0 ${glowIntensity}px hsla(${hue}, 100%, 50%, 0.5)`,
         }}
       >
         <span
           className="font-bold text-4xl tracking-wider"
           style={{
             color: 'white',
-            textShadow: `0 0 10px hsl(${hue}, 100%, 70%), 0 0 20px hsl(${hue}, 100%, 50%)`,
+            textShadow: `0 0 ${glowIntensity * 0.5}px hsl(${hue}, 100%, 70%), 0 0 ${glowIntensity}px hsl(${hue}, 100%, 50%)`,
           }}
         >
           VAK
@@ -114,7 +132,7 @@ export function DvdMode() {
           className="text-xs tracking-widest uppercase opacity-80"
           style={{
             color: 'white',
-            textShadow: `0 0 5px hsl(${hue}, 100%, 70%)`,
+            textShadow: `0 0 ${glowIntensity * 0.25}px hsl(${hue}, 100%, 70%)`,
           }}
         >
           Stock Exchange

@@ -13,6 +13,7 @@ export type EffectType =
   | 'binary'
   | 'aurora'
   | 'glitch'
+  | 'beatSync'
 
 interface EffectsContextType {
   // Individual effects
@@ -20,6 +21,11 @@ interface EffectsContextType {
   toggleEffect: (effect: EffectType) => void
   isEffectEnabled: (effect: EffectType) => boolean
   disableAllEffects: () => void
+
+  // Effect intensity (0-100)
+  effectIntensities: Record<EffectType, number>
+  getEffectIntensity: (effect: EffectType) => number
+  setEffectIntensity: (effect: EffectType, intensity: number) => void
 
   // Boot sequence
   bootComplete: boolean
@@ -37,12 +43,30 @@ const EffectsContext = createContext<EffectsContextType | null>(null)
 
 const STORAGE_KEY = 'smg-effects-settings'
 
+const DEFAULT_INTENSITY = 50
+
+const DEFAULT_INTENSITIES: Record<EffectType, number> = {
+  boot: DEFAULT_INTENSITY,
+  hacker: DEFAULT_INTENSITY,
+  drunk: DEFAULT_INTENSITY,
+  redacted: DEFAULT_INTENSITY,
+  crt: DEFAULT_INTENSITY,
+  neon: DEFAULT_INTENSITY,
+  dvd: DEFAULT_INTENSITY,
+  binary: DEFAULT_INTENSITY,
+  aurora: DEFAULT_INTENSITY,
+  glitch: DEFAULT_INTENSITY,
+  beatSync: DEFAULT_INTENSITY,
+}
+
 interface StoredSettings {
   enabledEffects: EffectType[]
+  effectIntensities?: Partial<Record<EffectType, number>>
 }
 
 export function EffectsProvider({ children }: { children: React.ReactNode }) {
   const [enabledEffects, setEnabledEffects] = useState<Set<EffectType>>(new Set())
+  const [effectIntensities, setEffectIntensities] = useState<Record<EffectType, number>>(DEFAULT_INTENSITIES)
   const [bootComplete, setBootComplete] = useState(false)
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -54,6 +78,9 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const settings: StoredSettings = JSON.parse(stored)
         setEnabledEffects(new Set(settings.enabledEffects))
+        if (settings.effectIntensities) {
+          setEffectIntensities({ ...DEFAULT_INTENSITIES, ...settings.effectIntensities })
+        }
       }
     } catch {
       // Ignore localStorage errors
@@ -67,12 +94,13 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
     try {
       const settings: StoredSettings = {
         enabledEffects: Array.from(enabledEffects),
+        effectIntensities,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch {
       // Ignore localStorage errors
     }
-  }, [enabledEffects, hydrated])
+  }, [enabledEffects, effectIntensities, hydrated])
 
   // Keyboard shortcut: Ctrl/Cmd + Shift + E
   useEffect(() => {
@@ -109,8 +137,23 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
     setEnabledEffects(new Set())
   }, [])
 
+  const getEffectIntensity = useCallback(
+    (effect: EffectType) => {
+      return effectIntensities[effect] ?? DEFAULT_INTENSITY
+    },
+    [effectIntensities]
+  )
+
+  const setEffectIntensity = useCallback((effect: EffectType, intensity: number) => {
+    setEffectIntensities((prev) => ({
+      ...prev,
+      [effect]: Math.max(0, Math.min(100, intensity)),
+    }))
+  }, [])
+
   const resetEffects = useCallback(() => {
     setEnabledEffects(new Set())
+    setEffectIntensities(DEFAULT_INTENSITIES)
   }, [])
 
   return (
@@ -120,6 +163,9 @@ export function EffectsProvider({ children }: { children: React.ReactNode }) {
         toggleEffect,
         isEffectEnabled,
         disableAllEffects,
+        effectIntensities,
+        getEffectIntensity,
+        setEffectIntensity,
         bootComplete,
         setBootComplete,
         settingsPanelOpen,

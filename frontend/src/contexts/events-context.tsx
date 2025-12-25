@@ -44,7 +44,7 @@ const STORAGE_KEY = 'smg-events-settings';
 export function EventsProvider({ children }: { children: React.ReactNode }) {
   const [currentEvent, setCurrentEvent] = useState<StockEvent | null>(null);
   const [eventQueue, setEventQueue] = useState<StockEvent[]>([]);
-  const [eventsEnabled, setEventsEnabled] = useState(true);
+  const [eventsEnabled, setEventsEnabled] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   // WebSocket for receiving server-side events

@@ -1,11 +1,39 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useEffects } from '@/contexts/effects-context'
 
 export function DrunkMode() {
-  const { isEffectEnabled } = useEffects()
+  const { isEffectEnabled, getEffectIntensity } = useEffects()
 
   const isEnabled = isEffectEnabled('drunk')
+  const intensity = getEffectIntensity('drunk')
+
+  // Calculate effect values based on intensity (0-100)
+  const wobbleAmount = (intensity / 100) * 0.6 // 0 to 0.6 degrees
+  const translateAmount = (intensity / 100) * 2 // 0 to 2px
+  const blurMin = (intensity / 100) * 0.6 // 0 to 0.6px
+  const blurMax = (intensity / 100) * 1.6 // 0 to 1.6px
+  const hueRotate = (intensity / 100) * 6 // 0 to 6 degrees
+  const vignetteOpacity = (intensity / 100) * 0.4 // 0 to 0.4
+
+  // Set CSS variables on body
+  useEffect(() => {
+    if (isEnabled) {
+      document.body.style.setProperty('--drunk-wobble', `${wobbleAmount}deg`)
+      document.body.style.setProperty('--drunk-translate', `${translateAmount}px`)
+      document.body.style.setProperty('--drunk-blur-min', `${blurMin}px`)
+      document.body.style.setProperty('--drunk-blur-max', `${blurMax}px`)
+      document.body.style.setProperty('--drunk-hue', `${hueRotate}deg`)
+    }
+    return () => {
+      document.body.style.removeProperty('--drunk-wobble')
+      document.body.style.removeProperty('--drunk-translate')
+      document.body.style.removeProperty('--drunk-blur-min')
+      document.body.style.removeProperty('--drunk-blur-max')
+      document.body.style.removeProperty('--drunk-hue')
+    }
+  }, [isEnabled, wobbleAmount, translateAmount, blurMin, blurMax, hueRotate])
 
   if (!isEnabled) return null
 
@@ -14,31 +42,31 @@ export function DrunkMode() {
       <style jsx global>{`
         @keyframes drunk-wobble {
           0% {
-            transform: rotate(-0.3deg) translateX(-1px);
+            transform: rotate(calc(-1 * var(--drunk-wobble, 0.3deg))) translateX(calc(-1 * var(--drunk-translate, 1px)));
           }
           25% {
-            transform: rotate(0.2deg) translateX(0.5px) translateY(0.5px);
+            transform: rotate(calc(0.66 * var(--drunk-wobble, 0.2deg))) translateX(calc(0.5 * var(--drunk-translate, 0.5px))) translateY(calc(0.5 * var(--drunk-translate, 0.5px)));
           }
           50% {
-            transform: rotate(0.3deg) translateX(1px);
+            transform: rotate(var(--drunk-wobble, 0.3deg)) translateX(var(--drunk-translate, 1px));
           }
           75% {
-            transform: rotate(-0.2deg) translateX(-0.5px) translateY(-0.5px);
+            transform: rotate(calc(-0.66 * var(--drunk-wobble, 0.2deg))) translateX(calc(-0.5 * var(--drunk-translate, 0.5px))) translateY(calc(-0.5 * var(--drunk-translate, 0.5px)));
           }
           100% {
-            transform: rotate(-0.3deg) translateX(-1px);
+            transform: rotate(calc(-1 * var(--drunk-wobble, 0.3deg))) translateX(calc(-1 * var(--drunk-translate, 1px)));
           }
         }
 
         @keyframes drunk-hue {
           0% {
-            filter: blur(0.3px) hue-rotate(0deg);
+            filter: blur(var(--drunk-blur-min, 0.3px)) hue-rotate(0deg);
           }
           50% {
-            filter: blur(0.8px) hue-rotate(3deg);
+            filter: blur(var(--drunk-blur-max, 0.8px)) hue-rotate(var(--drunk-hue, 3deg));
           }
           100% {
-            filter: blur(0.3px) hue-rotate(0deg);
+            filter: blur(var(--drunk-blur-min, 0.3px)) hue-rotate(0deg);
           }
         }
 
@@ -67,8 +95,9 @@ export function DrunkMode() {
       `}</style>
       {/* Vignette overlay */}
       <div
-        className="fixed inset-0 z-[5] pointer-events-none opacity-20"
+        className="fixed inset-0 z-[5] pointer-events-none"
         style={{
+          opacity: vignetteOpacity,
           background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)',
         }}
       />

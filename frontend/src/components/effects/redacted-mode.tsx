@@ -4,11 +4,17 @@ import { useEffect, useRef } from 'react'
 import { useEffects } from '@/contexts/effects-context'
 
 export function RedactedMode() {
-  const { isEffectEnabled, bootComplete } = useEffects()
+  const { isEffectEnabled, getEffectIntensity, bootComplete } = useEffects()
   const redactedElementsRef = useRef<HTMLElement[]>([])
   const intervalRef = useRef<NodeJS.Timeout>()
 
   const isEnabled = isEffectEnabled('redacted')
+  const intensity = getEffectIntensity('redacted')
+
+  // Calculate effect values based on intensity (0-100)
+  const redactionPercent = 0.05 + (intensity / 100) * 0.25 // 5% to 30%
+  const stampOpacity = 0.3 + (intensity / 100) * 0.7 // 0.3 to 1.0
+  const chartBlur = (intensity / 100) * 10 // 0 to 10px
 
   useEffect(() => {
     if (!isEnabled || !bootComplete) {
@@ -45,8 +51,8 @@ export function RedactedMode() {
         return true
       })
 
-      // Randomly select ~15% of elements to redact
-      const toRedact = validCandidates.filter(() => Math.random() < 0.15)
+      // Randomly select elements to redact based on intensity
+      const toRedact = validCandidates.filter(() => Math.random() < redactionPercent)
 
       toRedact.forEach((el) => {
         ;(el as HTMLElement).setAttribute('data-redacted', 'true')
@@ -69,7 +75,7 @@ export function RedactedMode() {
       })
       redactedElementsRef.current = []
     }
-  }, [isEnabled, bootComplete])
+  }, [isEnabled, bootComplete, redactionPercent])
 
   if (!isEnabled || !bootComplete) return null
 
@@ -96,7 +102,7 @@ export function RedactedMode() {
 
         /* Blur charts */
         body.redacted-mode .recharts-wrapper {
-          filter: blur(6px);
+          filter: blur(${chartBlur}px);
         }
       `}</style>
 
@@ -105,6 +111,7 @@ export function RedactedMode() {
         className="fixed top-1/2 left-1/2 z-[100] pointer-events-none"
         style={{
           transform: 'translate(-50%, -50%) rotate(-15deg)',
+          opacity: stampOpacity,
         }}
       >
         <div className="bg-red-600 text-white font-bold text-4xl md:text-6xl lg:text-8xl px-8 py-4 tracking-widest border-4 border-red-800 shadow-2xl">
@@ -113,22 +120,22 @@ export function RedactedMode() {
       </div>
 
       {/* Corner classification stamps */}
-      <div className="fixed top-4 left-4 z-[99] pointer-events-none">
+      <div className="fixed top-4 left-4 z-[99] pointer-events-none" style={{ opacity: stampOpacity }}>
         <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 tracking-wider">
           TOP SECRET
         </div>
       </div>
-      <div className="fixed top-4 right-4 z-[99] pointer-events-none">
+      <div className="fixed top-4 right-4 z-[99] pointer-events-none" style={{ opacity: stampOpacity }}>
         <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 tracking-wider">
           EYES ONLY
         </div>
       </div>
-      <div className="fixed bottom-4 left-4 z-[99] pointer-events-none">
+      <div className="fixed bottom-4 left-4 z-[99] pointer-events-none" style={{ opacity: stampOpacity }}>
         <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 tracking-wider">
           CLASSIFIED
         </div>
       </div>
-      <div className="fixed bottom-4 right-16 z-[99] pointer-events-none">
+      <div className="fixed bottom-4 right-16 z-[99] pointer-events-none" style={{ opacity: stampOpacity }}>
         <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 tracking-wider">
           NO FORN
         </div>

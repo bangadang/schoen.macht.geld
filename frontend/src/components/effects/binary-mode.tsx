@@ -8,11 +8,19 @@ import { useEffects } from '@/contexts/effects-context';
  * Lighter version of matrix rain, only on edges
  */
 export function BinaryMode() {
-  const { isEffectEnabled } = useEffects();
+  const { isEffectEnabled, getEffectIntensity } = useEffects();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const isEnabled = isEffectEnabled('binary');
+  const intensity = getEffectIntensity('binary');
+
+  // Calculate effect values based on intensity (0-100)
+  const canvasOpacity = 0.2 + (intensity / 100) * 0.6; // 0.2 to 0.8
+  const fallSpeed = 0.2 + (intensity / 100) * 0.6; // 0.2 to 0.8
+  const colorOpacity = 0.2 + (intensity / 100) * 0.4; // 0.2 to 0.6
+
   useEffect(() => {
-    if (!isEffectEnabled('binary')) return;
+    if (!isEnabled) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -52,7 +60,7 @@ export function BinaryMode() {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = 'rgba(0, 255, 100, 0.4)';
+      ctx.fillStyle = `rgba(0, 255, 100, ${colorOpacity})`;
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < totalColumns; i++) {
@@ -74,7 +82,7 @@ export function BinaryMode() {
         if (y > canvas.height && Math.random() > 0.98) {
           drops[i] = 0;
         }
-        drops[i] += 0.5; // Slower than matrix
+        drops[i] += fallSpeed;
       }
     };
 
@@ -84,9 +92,9 @@ export function BinaryMode() {
       clearInterval(interval);
       window.removeEventListener('resize', resize);
     };
-  }, [isEffectEnabled]);
+  }, [isEnabled, fallSpeed, colorOpacity]);
 
-  if (!isEffectEnabled('binary')) {
+  if (!isEnabled) {
     return null;
   }
 
@@ -94,7 +102,7 @@ export function BinaryMode() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-[84]"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: canvasOpacity }}
     />
   );
 }

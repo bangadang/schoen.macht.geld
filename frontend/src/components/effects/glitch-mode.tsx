@@ -8,19 +8,42 @@ import { useEffects } from '@/contexts/effects-context';
  * Creates random glitch lines and color separation
  */
 export function GlitchMode() {
-  const { isEffectEnabled } = useEffects();
+  const { isEffectEnabled, getEffectIntensity } = useEffects();
   const [glitchLine, setGlitchLine] = useState({ top: 0, height: 0, visible: false });
+
+  const isEnabled = isEffectEnabled('glitch');
+  const intensity = getEffectIntensity('glitch');
+
+  // Calculate effect values based on intensity (0-100)
+  const glitchChance = 0.3 + (intensity / 100) * 0.5; // 0.3 to 0.8
+  const glitchLineHeight = 2 + (intensity / 100) * 30; // 2 to 32px
+  const noiseOpacity = (intensity / 100) * 0.06; // 0 to 0.06
+  const shakeAmount = (intensity / 100) * 4; // 0 to 4px
+  const rgbShift = (intensity / 100) * 4; // 0 to 4px
+  const intervalMin = 400 - (intensity / 100) * 300; // 400 to 100ms
+
+  // Set CSS variables
+  useEffect(() => {
+    if (isEnabled) {
+      document.body.style.setProperty('--glitch-shake', `${shakeAmount}px`);
+      document.body.style.setProperty('--glitch-rgb', `${rgbShift}px`);
+    }
+    return () => {
+      document.body.style.removeProperty('--glitch-shake');
+      document.body.style.removeProperty('--glitch-rgb');
+    };
+  }, [isEnabled, shakeAmount, rgbShift]);
 
   // Random glitch line effect
   useEffect(() => {
-    if (!isEffectEnabled('glitch')) return;
+    if (!isEnabled) return;
 
     const triggerGlitch = () => {
       // Random chance to show glitch
-      if (Math.random() > 0.7) {
+      if (Math.random() < glitchChance) {
         setGlitchLine({
           top: Math.random() * 100,
-          height: 2 + Math.random() * 20,
+          height: 2 + Math.random() * glitchLineHeight,
           visible: true,
         });
 
@@ -31,11 +54,11 @@ export function GlitchMode() {
       }
     };
 
-    const interval = setInterval(triggerGlitch, 200 + Math.random() * 500);
+    const interval = setInterval(triggerGlitch, intervalMin + Math.random() * 200);
     return () => clearInterval(interval);
-  }, [isEffectEnabled]);
+  }, [isEnabled, glitchChance, glitchLineHeight, intervalMin]);
 
-  if (!isEffectEnabled('glitch')) {
+  if (!isEnabled) {
     return null;
   }
 
@@ -56,8 +79,9 @@ export function GlitchMode() {
 
       {/* Static noise overlay */}
       <div
-        className="fixed inset-0 pointer-events-none z-[90] opacity-[0.03]"
+        className="fixed inset-0 pointer-events-none z-[90]"
         style={{
+          opacity: noiseOpacity,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
           animation: 'glitch-noise 0.2s steps(10) infinite',
         }}
@@ -83,10 +107,10 @@ export function GlitchMode() {
 
         @keyframes glitch-shake {
           0%, 95%, 100% { transform: translate(0, 0); }
-          96% { transform: translate(-2px, 0); }
-          97% { transform: translate(2px, 0); }
-          98% { transform: translate(-1px, 0); }
-          99% { transform: translate(1px, 0); }
+          96% { transform: translate(calc(-1 * var(--glitch-shake, 2px)), 0); }
+          97% { transform: translate(var(--glitch-shake, 2px), 0); }
+          98% { transform: translate(calc(-0.5 * var(--glitch-shake, 1px)), 0); }
+          99% { transform: translate(calc(0.5 * var(--glitch-shake, 1px)), 0); }
         }
 
         /* Chromatic aberration on text */
@@ -100,21 +124,21 @@ export function GlitchMode() {
           }
           91% {
             text-shadow:
-              2px 0 0 rgba(255, 0, 0, 0.7),
-              -2px 0 0 rgba(0, 255, 255, 0.7);
+              var(--glitch-rgb, 2px) 0 0 rgba(255, 0, 0, 0.7),
+              calc(-1 * var(--glitch-rgb, 2px)) 0 0 rgba(0, 255, 255, 0.7);
           }
           92% {
             text-shadow:
-              -2px 0 0 rgba(255, 0, 0, 0.7),
-              2px 0 0 rgba(0, 255, 255, 0.7);
+              calc(-1 * var(--glitch-rgb, 2px)) 0 0 rgba(255, 0, 0, 0.7),
+              var(--glitch-rgb, 2px) 0 0 rgba(0, 255, 255, 0.7);
           }
           93% {
             text-shadow: none;
           }
           94% {
             text-shadow:
-              1px 0 0 rgba(255, 0, 0, 0.5),
-              -1px 0 0 rgba(0, 255, 255, 0.5);
+              calc(0.5 * var(--glitch-rgb, 1px)) 0 0 rgba(255, 0, 0, 0.5),
+              calc(-0.5 * var(--glitch-rgb, 1px)) 0 0 rgba(0, 255, 255, 0.5);
           }
         }
       `}</style>
