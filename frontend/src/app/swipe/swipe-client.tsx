@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,7 +57,7 @@ export default function SwipeClient() {
    * Handles the swipe action, either from a drag gesture or a button click.
    * It animates the card off-screen and then calls the backend to update the stock.
    */
-  const handleSwipe = async (direction: SwipeDirection) => {
+  const handleSwipe = useCallback(async (direction: SwipeDirection) => {
     if (shuffledTickers.length === 0 || isSubmitting) return;
 
     const tickerToUpdate = shuffledTickers[currentIndex % shuffledTickers.length];
@@ -86,7 +86,25 @@ export default function SwipeClient() {
         }
       },
     });
-  };
+  }, [shuffledTickers, currentIndex, isSubmitting, swipeToken, x, mutate]);
+
+  // Handle arrow key presses for swiping
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSubmitting) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleSwipe('left');
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleSwipe('right');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSubmitting, handleSwipe]);
 
   // Get the current stock from the stable shuffled list
   const currentStock = useMemo(() => {
