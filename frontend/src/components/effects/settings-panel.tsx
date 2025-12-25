@@ -2,6 +2,7 @@
 
 import { Settings } from 'lucide-react'
 import { useEffects, EffectType } from '@/contexts/effects-context'
+import { useEvents } from '@/contexts/events-context'
 import {
   Sheet,
   SheetContent,
@@ -55,6 +56,8 @@ export function SettingsPanel() {
     setSettingsPanelOpen,
   } = useEffects()
 
+  const { eventsEnabled, setEventsEnabled } = useEvents()
+
   const renderEffectToggle = (effect: EffectOption) => (
     <div
       key={effect.id}
@@ -95,7 +98,7 @@ export function SettingsPanel() {
 
       {/* Settings sheet */}
       <Sheet open={settingsPanelOpen} onOpenChange={setSettingsPanelOpen}>
-        <SheetContent side="right" className="w-80">
+        <SheetContent side="right" className="w-80 z-[200]">
           <SheetHeader>
             <SheetTitle>Visual Effects</SheetTitle>
             <SheetDescription>
@@ -139,6 +142,30 @@ export function SettingsPanel() {
                 Visual Modes
               </h4>
               {VISUAL_MODES.map(renderEffectToggle)}
+            </div>
+
+            <Separator />
+
+            {/* Event animations */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Event Animations
+              </h4>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="events" className="text-base">
+                    Event Animations
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Celebrate new #1, all-time highs, crashes
+                  </p>
+                </div>
+                <Switch
+                  id="events"
+                  checked={eventsEnabled}
+                  onCheckedChange={setEventsEnabled}
+                />
+              </div>
             </div>
 
             <Separator />

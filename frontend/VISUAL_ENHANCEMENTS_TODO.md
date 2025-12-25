@@ -16,8 +16,8 @@
 
 | Status | Feature | Priority | Notes |
 |--------|---------|----------|-------|
-| [ ] | Performance Race | ⭐⭐⭐ | Animated line race of top 5 stocks over time |
-| [ ] | IPO Spotlight | ⭐⭐⭐ | Highlight newly registered stocks |
+| [x] | Performance Race | ⭐⭐⭐ | Animated line race of top 5 stocks over time |
+| [x] | IPO Spotlight | ⭐⭐⭐ | Highlight newly registered stocks |
 | [ ] | Correlation Matrix | ⭐ | Heatmap showing stock correlations. Needs new backend endpoint `GET /api/correlation-matrix` |
 | [ ] | Sector Sunburst | ⭐ | AI generates group titles for 3-6 random stocks, displayed as hierarchical sunburst |
 
@@ -47,9 +47,9 @@
 
 | Status | Feature | Priority | Notes |
 |--------|---------|----------|-------|
-| [ ] | New #1 Celebration | ⭐⭐ | Confetti + spotlight + large ticker/image reveal before fading to table |
-| [ ] | All-Time High | ⭐⭐ | Rocket launch or balloon rise animation |
-| [ ] | Big Crash | ⭐⭐ | Explosion particles + screen shake |
+| [x] | New #1 Celebration | ⭐⭐ | Confetti + spotlight + large ticker/image reveal before fading to table |
+| [x] | All-Time High | ⭐⭐ | Rocket launch or balloon rise animation |
+| [x] | Big Crash | ⭐⭐ | Explosion particles + screen shake |
 | [ ] | Market Open | ⭐⭐ | Bell animation + flash |
 
 ---
@@ -163,3 +163,36 @@
 - Settings panel with individual toggles + master disable
 - Keyboard shortcut: `Ctrl/Cmd+Shift+E`
 - Auto-reset on 500 server errors
+
+### Event Animations Infrastructure
+- `EventsContext` for detecting and triggering events
+- `EventsProvider` wraps app (inside EffectsProvider)
+- `EventsLayer` renders active event animation
+- Event detection: rank changes, all-time highs, crashes (-10%+)
+- Events queue system for handling multiple events
+- Toggle in settings panel
+
+### New #1 Celebration
+- Confetti particles (50 colored pieces falling)
+- Spotlight gradient background
+- Crown icon with sparkle animation
+- Large stock card with glowing border
+- Displays new leader info + who was overtaken
+- 8 second duration with auto-dismiss
+
+### All-Time High
+- Rocket launch animation with flame trail
+- Stock card attached to rocket
+- Stars twinkling in background
+- Green theme with celebration badge
+- Shows previous high vs new high
+- 6 second duration
+
+### Big Crash
+- Red flash on impact
+- Screen shake effect
+- Explosion particles radiating outward
+- Smoke rising effect
+- Fire overlay on stock image
+- Warning icons and dramatic text
+- 6 second duration

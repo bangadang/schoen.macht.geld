@@ -6,7 +6,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { SWRConfig } from 'swr';
 import { EffectsProvider, useEffects } from '@/contexts/effects-context';
+import { EventsProvider } from '@/contexts/events-context';
 import { EffectsLayer } from '@/components/effects';
+import { EventsLayer } from '@/components/events';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -36,6 +38,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     >
       {children}
       <EffectsLayer />
+      <EventsLayer />
       <Toaster />
     </SWRConfig>
   );
@@ -60,7 +63,9 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', poppins.variable)}>
         <EffectsProvider>
-          <AppContent>{children}</AppContent>
+          <EventsProvider>
+            <AppContent>{children}</AppContent>
+          </EventsProvider>
         </EffectsProvider>
       </body>
     </html>
