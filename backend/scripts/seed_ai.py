@@ -74,30 +74,43 @@ Regeln:
 Gib nur die Beschreibung aus."""
 
 
-async def generate_stocks_with_ai(count: int) -> list[dict]:
-    """Generate stock data using AI."""
+async def generate_stocks_batch(count: int) -> list[dict]:
+    """Generate a single batch of stocks (max 10)."""
     prompt = STOCK_GENERATION_PROMPT.format(count=count)
 
-    logger.info(f"Generating {count} stocks with AI...")
-
-    try:
-        response_text = await ai.generate_text(prompt, max_tokens=count * 500)
-    except AIError as e:
-        logger.error(f"AI generation failed: {e}")
-        raise
+    response_text = await ai.generate_text(prompt, max_tokens=5000)
 
     # Parse JSON from response
-    try:
-        json_match = re.search(r"\[.*\]", response_text, re.DOTALL)
-        if json_match:
-            stocks = json.loads(json_match.group())
-            return stocks
-        else:
-            raise ValueError("No JSON array found in response")
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.error(f"Failed to parse AI response: {e}")
-        logger.debug(f"Response was: {response_text}")
-        raise
+    json_match = re.search(r"\[.*\]", response_text, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group())
+    raise ValueError("No JSON array found in response")
+
+
+async def generate_stocks_with_ai(count: int) -> list[dict]:
+    """Generate stock data using AI in batches."""
+    logger.info(f"Generating {count} stocks with AI...")
+
+    batch_size = 10
+    all_stocks = []
+    remaining = count
+
+    while remaining > 0:
+        batch_count = min(batch_size, remaining)
+        logger.info(f"  Generating batch of {batch_count}...")
+
+        try:
+            stocks = await generate_stocks_batch(batch_count)
+            all_stocks.extend(stocks)
+            remaining -= len(stocks)
+        except (AIError, json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Batch generation failed: {e}")
+            if not all_stocks:
+                raise
+            logger.warning("Continuing with partial results...")
+            break
+
+    return all_stocks
 
 
 async def generate_description(title: str) -> str:

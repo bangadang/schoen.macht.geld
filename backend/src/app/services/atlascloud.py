@@ -162,9 +162,9 @@ class AtlasCloudClient:
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": str(max_tokens),
-            "temperature": str(1),
-            "stream": str(False),
+            "max_tokens": max_tokens,
+            "temperature": 1,
+            "stream": False,
         }
         logger.debug(f"Generating text with model {model}")
         resp = await self._request("POST", "/v1/chat/completions", json=payload)
