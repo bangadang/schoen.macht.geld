@@ -26,7 +26,7 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def timed_task(
+def timed_task[**P, R](
     func: Callable[P, Awaitable[R]],
 ) -> Callable[P, Awaitable[R]]:
     """Decorator to log timing and query stats for scheduler tasks."""

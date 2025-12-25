@@ -89,7 +89,7 @@ class Stock(SQLModel, table=True):
     price_events: list[PriceEvent] = Relationship(  # pyright: ignore[reportAny]
         back_populates="stock",
         sa_relationship_kwargs={
-            "lazy": "selectin",
+            "lazy": "noload",
             "order_by": "PriceEvent.created_at.desc()",
         },
     )
@@ -97,12 +97,15 @@ class Stock(SQLModel, table=True):
     snapshots: list[StockSnapshot] = Relationship(  # pyright: ignore[reportAny]
         back_populates="stock",
         sa_relationship_kwargs={
-            "lazy": "selectin",
+            "lazy": "noload",
             "order_by": "StockSnapshot.created_at.desc()",
         },
     )
 
-    ai_tasks: list["AITask"] = Relationship(back_populates="stock")  # noqa: F821, UP037  # pyright: ignore[reportAny,reportUndefinedVariable]
+    ai_tasks: list["AITask"] = Relationship(  # noqa: F821, UP037  # pyright: ignore[reportAny,reportUndefinedVariable]
+        back_populates="stock",
+        sa_relationship_kwargs={"lazy": "noload"},
+    )
 
     @override
     def __repr__(self) -> str:

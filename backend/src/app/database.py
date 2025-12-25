@@ -35,10 +35,10 @@ def get_query_stats() -> tuple[int, float]:
 @event.listens_for(engine.sync_engine, "before_execute")
 def before_execute(
     conn: Connection,
-    clauseelement: Any,
-    multiparams: Any,
-    params: Any,
-    execution_options: Any,
+    clauseelement: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    multiparams: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    params: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    execution_options: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
 ) -> None:
     """Record query start time."""
     conn.info["query_start_time"] = time.perf_counter()
@@ -47,11 +47,11 @@ def before_execute(
 @event.listens_for(engine.sync_engine, "after_execute")
 def after_execute(
     conn: Connection,
-    clauseelement: Any,
-    multiparams: Any,
-    params: Any,
-    execution_options: Any,
-    result: Any,
+    clauseelement: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    multiparams: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    params: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    execution_options: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
+    result: Any,  # pyright: ignore[reportAny, reportExplicitAny, reportUnusedParameter]
 ) -> None:
     """Count query and accumulate time."""
     _query_stats[0] += 1

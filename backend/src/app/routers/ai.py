@@ -5,14 +5,13 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from sqlalchemy import func
-from sqlalchemy.orm import noload
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
 from app.database import get_session
 from app.models.ai_task import AITask, ImageType, TaskStatus, TaskType
-from app.models.stock import PriceEvent, Stock, StockSnapshot
+from app.models.stock import PriceEvent, Stock
 from app.schemas.ai import (
     AITaskCreateResponse,
     AITaskResponse,
@@ -240,16 +239,11 @@ async def generate_headlines(
     # Clamp count to valid range
     count = max(1, min(10, count))
 
-    # Get stocks without eager loading relationships
-    # Filter for stocks with reference_price (needed for percentage_change)
+    # Get stocks with reference_price (needed for percentage_change)
+    # Relationships default to noload
     query = (
         select(Stock)
-        .options(
-            noload(Stock.price_events),
-            noload(Stock.snapshots),
-            noload(Stock.ai_tasks),
-        )
-        .where(Stock.reference_price.is_not(None))  # pyright: ignore[reportAttributeAccessIssue]
+        .where(col(Stock.reference_price).is_not(None))
         .limit(count * 2)  # Get extra to sort by volatility
     )
     result = await session.exec(query)
@@ -278,8 +272,8 @@ async def generate_headlines(
         events_subq.c.ticker,
         events_subq.c.price,
     ).where(events_subq.c.rn == 1)
-    events_result = await session.exec(events_query)  # pyright: ignore[reportArgumentType]
-    price_by_ticker = {row.ticker: row.price for row in events_result.all()}
+    events_result = await session.exec(events_query)
+    price_by_ticker = {ticker: price for ticker, price in events_result.all()}  # pyright: ignore[reportAny]
 
     # Sort by absolute percentage change and take top N
     stocks = sorted(
@@ -290,9 +284,11 @@ async def generate_headlines(
 
     # Build stocks data string for prompt (use fetched prices)
     stocks_data = "\n".join(
-        f"- Börsenkürzel: {s.ticker}, Spitzname: {s.title}, "
-        + f"Aktueller Wert: {price_by_ticker.get(s.ticker, s.reference_price or 0):.2f} CHF, "
-        + f"Veränderung: {(price_by_ticker.get(s.ticker, 0) - (s.reference_price or 0)):.2f} CHF ({s.percentage_change:.2f}%)"
+        f"- Börsenkürzel: {s.ticker}, Spitzname: {s.title}, Aktueller Wert: "
+        + f"{price_by_ticker.get(s.ticker, s.reference_price or 0):.2f} CHF, "
+        + "Veränderung: "
+        + f"{(price_by_ticker.get(s.ticker, 0) - (s.reference_price or 0)):.2f} CHF"
+        + f"({s.percentage_change:.2f}%)"
         for s in stocks
     )
 

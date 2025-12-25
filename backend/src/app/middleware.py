@@ -2,6 +2,7 @@
 
 import time
 from collections.abc import Awaitable, Callable
+from typing import override
 
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,6 +15,7 @@ from app.database import get_query_stats, reset_query_stats
 class TimingMiddleware(BaseHTTPMiddleware):
     """Middleware to log request timing and SQL query statistics."""
 
+    @override
     async def dispatch(
         self,
         request: Request,

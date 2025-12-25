@@ -6,6 +6,8 @@ from sqladmin import Admin, ModelView, action
 from sqladmin.helpers import is_async_session_maker
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import Select
 from sqlmodel import col
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -189,6 +191,27 @@ class StockAdmin(ModelView, model=Stock):
         if old_image:
             cleanup_old_image(old_image)  # pyright: ignore[reportAny]
             logger.info("Admin: cleaned up old image for stock {}", model.ticker)
+
+    @override
+    def details_query(self, request: Request) -> Select[tuple[Stock]]:
+        """Load relationships excluded from form for detail view."""
+        stmt = self.form_edit_query(request)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        # Explicitly load relationships (noload by default in model)
+        stmt = stmt.options(selectinload(Stock.price_events))  # pyright: ignore[reportArgumentType]
+        stmt = stmt.options(selectinload(Stock.snapshots))  # pyright: ignore[reportArgumentType]
+        stmt = stmt.options(selectinload(Stock.ai_tasks))  # pyright: ignore[reportArgumentType, reportUnknownMemberType]
+        return stmt
+
+    @override
+    async def get_object_for_details(self, request: Request) -> Stock | None:
+        """Limit loaded relationships to most recent entries."""
+        stock = await self._get_object_by_pk(self.details_query(request))  # pyright: ignore[reportAny, reportUnknownMemberType]
+        if stock:
+            # Limit to 10 latest price_events (already ordered DESC in model)
+            stock.price_events = stock.price_events[:10] if stock.price_events else []  # pyright: ignore[reportAny]
+            # Limit to 32 latest snapshots (already ordered DESC in model)
+            stock.snapshots = stock.snapshots[:32] if stock.snapshots else []  # pyright: ignore[reportAny]
+        return stock  # pyright: ignore[reportAny]
 
 
 class PriceEventAdmin(ModelView, model=PriceEvent):
