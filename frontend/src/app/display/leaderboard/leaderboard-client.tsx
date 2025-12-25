@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useStocks } from '@/hooks/use-stocks';
+import { FlashValue } from '@/components/flash-value';
 
 /**
  * The client component for the Leaderboard page.
@@ -48,7 +49,10 @@ export default function LeaderboardClient() {
                 {/* Rank position with change indicator */}
                 <div className="flex items-center gap-1">
                   <span className="font-bold text-xl text-yellow-400 w-6 text-right">
-                    {stock.rank ?? '-'}
+                    <FlashValue
+                      value={stock.rank ?? '-'}
+                      trackingKey={stock.ticker}
+                    />
                   </span>
                   {rankChange > 0 && (
                     <ArrowUp size={14} className="text-green-400" />
@@ -74,7 +78,11 @@ export default function LeaderboardClient() {
                     isPositive ? 'text-green-400' : 'text-red-500'
                   )}
                 >
-                  {stock.price.toFixed(2)}
+                  <FlashValue
+                    value={stock.price}
+                    trackingKey={stock.ticker}
+                    formatFn={(v) => Number(v).toFixed(2)}
+                  />
                 </span>
 
                 {/* Percent change */}
@@ -87,10 +95,11 @@ export default function LeaderboardClient() {
                   {stock.percent_change !== 0 && (
                     isPositive ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                   )}
-                  <span>
-                    {isPositive ? '+' : ''}
-                    {stock.percent_change.toFixed(2)}%
-                  </span>
+                  <FlashValue
+                    value={stock.percent_change}
+                    trackingKey={stock.ticker}
+                    formatFn={(v) => `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`}
+                  />
                 </div>
               </div>
             );

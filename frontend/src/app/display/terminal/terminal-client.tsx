@@ -14,6 +14,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useStocks } from '@/hooks/use-stocks';
 import type { StockResponse } from '@/lib/api/client';
 import { generateHeadlinesAiGenerateHeadlinesPost } from '@/lib/api/client';
+import { FlashValue } from '@/components/flash-value';
 
 const HEADLINE_SEPARATOR = ' +++ ';
 
@@ -177,7 +178,11 @@ export default function TerminalClient() {
                       isPositive ? 'text-green-400' : 'text-red-500'
                     )}
                   >
-                    {stock.price.toFixed(2)} CHF
+                    <FlashValue
+                      value={stock.price}
+                      trackingKey={stock.ticker}
+                      formatFn={(v) => `${Number(v).toFixed(2)} CHF`}
+                    />
                   </TableCell>
                   <TableCell
                     className={cn(
@@ -189,8 +194,11 @@ export default function TerminalClient() {
                           : 'text-red-500'
                     )}
                   >
-                    {stock.change >= 0 ? '+' : ''}
-                    {stock.change.toFixed(2)}
+                    <FlashValue
+                      value={stock.change}
+                      trackingKey={stock.ticker}
+                      formatFn={(v) => `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}`}
+                    />
                   </TableCell>
                   <TableCell
                     className={cn(
@@ -202,8 +210,11 @@ export default function TerminalClient() {
                           : 'text-red-500'
                     )}
                   >
-                    {stock.percent_change >= 0 ? '+' : ''}
-                    {stock.percent_change.toFixed(2)}%
+                    <FlashValue
+                      value={stock.percent_change}
+                      trackingKey={stock.ticker}
+                      formatFn={(v) => `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`}
+                    />
                   </TableCell>
                 </TableRow>
               );

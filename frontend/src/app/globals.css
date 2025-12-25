@@ -67,3 +67,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Bloomberg-style flash animation for value changes */
+@keyframes flash {
+  0% {
+    background-color: rgba(255, 255, 0, 0.8);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-flash {
+  animation: flash 500ms ease-out;
+}
